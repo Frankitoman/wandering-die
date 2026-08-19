@@ -43,7 +43,6 @@
       dice_custom_dc_detected: 'El destino ya sabe qué tan difícil es esto. Tirá el dado para descubrirlo.',
       dice_custom_low: 'Frená y esperá el momento',
       dice_custom_high: 'Animate y avanzá',
-      dice_again: 'Tirar de nuevo',
       footer_tagline: 'Una herramienta hecha por y para aventureros indecisos.',
       footer_made: 'Diseñado y construido por',
       footer_back_home: 'Volver al portfolio'
@@ -84,7 +83,6 @@
       dice_custom_dc_detected: 'Fate already knows how hard this one is. Roll to find out.',
       dice_custom_low: 'Hold back and wait',
       dice_custom_high: 'Go for it',
-      dice_again: 'Roll again',
       footer_tagline: 'A tool made by and for indecisive adventurers.',
       footer_made: 'Designed and built by',
       footer_back_home: 'Back to the portfolio'
@@ -125,7 +123,6 @@
       dice_custom_dc_detected: 'Skæbnen kender allerede sværhedsgraden. Kast terningen for at finde ud af det.',
       dice_custom_low: 'Vent og hold igen',
       dice_custom_high: 'Kast dig ud i det',
-      dice_again: 'Kast igen',
       footer_tagline: 'Et værktøj lavet af og til ubeslutsomme eventyrere.',
       footer_made: 'Designet og bygget af',
       footer_back_home: 'Tilbage til porteføljen'

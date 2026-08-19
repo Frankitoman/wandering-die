@@ -22,7 +22,9 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var UV_PATTERN = [0.5, 0.92, 0.08, 0.08, 0.92, 0.08];
   var UV_CENTROID_V = (UV_PATTERN[1] + UV_PATTERN[3] + UV_PATTERN[5]) / 3;
 
-  function easeOutQuint(t) { return 1 - Math.pow(1 - t, 5); }
+  // Zero velocity at both ends (no jolt at launch, no snap at the stop), still with a
+  // confident, energetic middle section — smoother than a plain ease-out.
+  function rollEase(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
 
   // Decomposes the rotation from `from` to `to` into a single axis + shortest angle,
   // so the whole roll can spin around ONE fixed axis and land exactly on target
@@ -107,7 +109,7 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     var q1 = new THREE.Quaternion().setFromUnitVectors(normal, new THREE.Vector3(0, 0, 1));
     var rotatedUp = up.clone().applyQuaternion(q1);
     var angle = Math.atan2(rotatedUp.x, rotatedUp.y);
-    var q2 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -angle);
+    var q2 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle);
     return new THREE.Quaternion().multiplyQuaternions(q2, q1);
   }
 
@@ -190,11 +192,11 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     if (rolling) {
       var elapsed = now - rollStart;
       var p = Math.min(elapsed / ROLL_DURATION, 1);
-      var eased = easeOutQuint(p);
+      var eased = rollEase(p);
       var rot = new THREE.Quaternion().setFromAxisAngle(rollAxis, rollTotalAngle * eased);
       dieGroup.quaternion.multiplyQuaternions(rot, rollStartQuat);
-      dieGroup.position.y = Math.sin(p * Math.PI) * 0.3;
-      var s = 1 + Math.sin(p * Math.PI) * 0.05;
+      dieGroup.position.y = Math.sin(eased * Math.PI) * 0.3;
+      var s = 1 + Math.sin(eased * Math.PI) * 0.05;
       dieGroup.scale.set(s, s, s);
       if (p >= 1) {
         rolling = false;

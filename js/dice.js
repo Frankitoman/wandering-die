@@ -47,7 +47,6 @@
     els.resultArea = document.getElementById('diceResultArea');
     els.rollNumber = document.getElementById('diceRollNumber');
     els.outcome = document.getElementById('diceOutcome');
-    els.againBtn = document.getElementById('diceAgainBtn');
     els.customInput = document.getElementById('diceCustomInput');
     els.customBtn = document.getElementById('diceCustomBtn');
     els.customNote = document.getElementById('diceCustomDcNote');
@@ -171,7 +170,6 @@
     renderFilters();
     renderList();
     els.rollBtn.addEventListener('click', rollDie);
-    els.againBtn.addEventListener('click', function () { els.resultArea.hidden = true; });
     els.customBtn.addEventListener('click', submitCustom);
     els.customInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') submitCustom();
