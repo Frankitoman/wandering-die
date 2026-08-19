@@ -200,7 +200,7 @@ body::before {
 .dice-stage__prompt { font-family: var(--font-display); font-size: 1.2rem; color: var(--silver-bright); margin-bottom: 26px; line-height: 1.4; }
 
 .d20 {
-  width: 190px; height: 190px; margin: 0 auto 30px; position: relative;
+  width: 240px; height: 240px; margin: 0 auto 30px; position: relative;
 }
 .d20 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 32px var(--glow)); }
 .d20__number {
@@ -238,7 +238,6 @@ body::before {
 }
 
 .dice-result { margin-top: 10px; animation: dice-result-in 0.4s ease; }
-.dice-result__roll { font-family: var(--font-display); font-size: 1.1rem; color: var(--silver-bright); margin-bottom: 16px; }
 .dice-outcome {
   border: 1px solid var(--violet-bright); border-radius: var(--radius-sm); padding: 18px 20px;
   font-size: 1.32rem; line-height: 1.45; color: var(--silver-bright);

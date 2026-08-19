@@ -56,7 +56,6 @@
     els.dieNumber = document.getElementById('diceD20Number');
     els.rollBtn = document.getElementById('diceRollBtn');
     els.resultArea = document.getElementById('diceResultArea');
-    els.rollNumber = document.getElementById('diceRollNumber');
     els.outcome = document.getElementById('diceOutcome');
     els.customInput = document.getElementById('diceCustomInput');
     els.customBtn = document.getElementById('diceCustomBtn');
@@ -141,7 +140,6 @@
   }
 
   function showRollResult(roll) {
-    els.rollNumber.textContent = t('dice_roll_result', { roll: roll });
     var success = roll >= current.dc;
     var pool = success ? current.high : current.low;
     els.outcome.textContent = pickVariant(pool, current.key + (success ? '_high' : '_low'));

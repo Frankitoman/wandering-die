@@ -4,7 +4,9 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 (function () {
   'use strict';
 
-  var SIZE = 190;
+  var SIZE = 240;
+  var CAMERA_DISTANCE = 5.43; // pulled back (with SIZE scaled to match) so the die keeps
+                               // its on-screen size while gaining real room to bounce in
   var RADIUS = 1.0; // kept safely inside the camera's visible frustum so vertices never clip the frame
   var ROLL_DURATION = 2800; // one continuous spin-to-stop, no separate correction phase
 
@@ -23,13 +25,12 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var wobbleAxisB = new THREE.Vector3(1, 0, 0);
   var wobbleFreqA = 3, wobbleFreqB = 4, wobblePhaseB = 0;
 
-  // Purely cosmetic bounce-in-a-box: while shrunk down, the die carries real
-  // velocity and reflects off an invisible frame around the visible canvas, then
-  // homes back to dead center as it regrows to full size for the reveal. This only
-  // ever moves position/scale — it never touches rotation, so it can't influence
-  // which number is about to land (that's already fixed the moment startRoll runs).
-  var BOUNCE_BOUND = 0.42;
-  var BOUNCE_SCALE = 0.55;
+  // Purely cosmetic bounce-in-a-box: the die (always at full, constant size) carries
+  // real velocity and reflects off an invisible frame around the visible canvas, then
+  // homes back to dead center for the reveal. This only ever moves position — it
+  // never touches rotation or scale, so it can't influence which number is about to
+  // land (that's already fixed the moment startRoll runs).
+  var BOUNCE_BOUND = 0.35;
   var BOUNCE_PHASE_END = 0.68; // fraction of ROLL_DURATION spent bouncing before homing in
   var bouncePos = new THREE.Vector2(0, 0);
   var bounceVel = new THREE.Vector2(0, 0);
@@ -175,7 +176,7 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(32, 1, 0.1, 10);
-    camera.position.set(0, 0, 4.3);
+    camera.position.set(0, 0, CAMERA_DISTANCE);
 
     scene.add(new THREE.AmbientLight(0x2a2140, 1.15));
     var key = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -288,17 +289,13 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
         bouncePos.y = homingStartPos.y * (1 - homingEase);
       }
 
-      var growEase = p < BOUNCE_PHASE_END ? 0 : rollEase((p - BOUNCE_PHASE_END) / (1 - BOUNCE_PHASE_END));
-      var s = BOUNCE_SCALE + (1 - BOUNCE_SCALE) * growEase;
       dieGroup.position.x = bouncePos.x;
       dieGroup.position.y = bouncePos.y;
-      dieGroup.scale.set(s, s, s);
 
       if (p >= 1) {
         rolling = false;
         dieGroup.position.x = 0;
         dieGroup.position.y = 0;
-        dieGroup.scale.set(1, 1, 1);
       }
     }
     // resting: hold the landed orientation exactly, no idle drift once a result has landed
