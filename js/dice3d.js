@@ -4,9 +4,10 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 (function () {
   'use strict';
 
-  var SIZE = 240;
-  var CAMERA_DISTANCE = 5.43; // pulled back (with SIZE scaled to match) so the die keeps
-                               // its on-screen size while gaining real room to bounce in
+  var SIZE = 340; // internal render resolution; CSS scales the box responsively without
+                   // touching this, so the bounce frame's proportions stay identical everywhere
+  var CAMERA_DISTANCE = 7.7; // pulled back (with SIZE scaled to match) so the die keeps
+                              // its on-screen size while gaining a much bigger bounce frame
   var RADIUS = 1.0; // kept safely inside the camera's visible frustum so vertices never clip the frame
   var ROLL_DURATION = 2800; // one continuous spin-to-stop, no separate correction phase
 
@@ -25,8 +26,9 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   // Only the final homing-phase corrective spin (computed once, from wherever the
   // rolling motion left off) guarantees the exact target face — nothing here can
   // change which number is about to land, that's fixed the moment startRoll runs.
-  var BOUNCE_BOUND = 0.35;
+  var BOUNCE_BOUND = 0.68;
   var BOUNCE_PHASE_END = 0.68; // fraction of ROLL_DURATION spent bouncing before homing in
+  var SPIN_DECAY_START = 0.5; // fraction of the bounce phase where angular speed starts easing to 0
   var ROLL_RADIUS = 0.4; // smaller = faster apparent spin per unit of travel speed
   var bouncePos = new THREE.Vector2(0, 0);
   var bounceVel = new THREE.Vector2(0, 0);
@@ -258,11 +260,16 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
         else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
 
         // Roll in the direction of current travel — axis is perpendicular to
-        // velocity, so it flips the instant a wall reflects the velocity.
+        // velocity, so it flips the instant a wall reflects the velocity. Speed
+        // eases down to exactly 0 over the back half of the bounce phase, so by
+        // the time homing takes over there is zero leftover angular velocity —
+        // no jerk, no "sudden extra spin" grafted onto the end.
         var speed = bounceVel.length();
-        if (speed > 1e-4) {
+        var bounceProgress = p / BOUNCE_PHASE_END;
+        var spinDecay = bounceProgress < SPIN_DECAY_START ? 1 : 1 - rollEase((bounceProgress - SPIN_DECAY_START) / (1 - SPIN_DECAY_START));
+        if (speed > 1e-4 && spinDecay > 0) {
           var rollAxisVec = new THREE.Vector3(-bounceVel.y, bounceVel.x, 0).normalize();
-          var deltaQ = new THREE.Quaternion().setFromAxisAngle(rollAxisVec, (speed / ROLL_RADIUS) * dt);
+          var deltaQ = new THREE.Quaternion().setFromAxisAngle(rollAxisVec, (speed / ROLL_RADIUS) * spinDecay * dt);
           dieGroup.quaternion.premultiply(deltaQ);
         }
       } else {
@@ -272,8 +279,7 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
           homingRollStartQuat.copy(dieGroup.quaternion);
           var plan = computeSpinPlan(homingRollStartQuat, rollTargetQuat);
           homingRollAxis.copy(plan.axis);
-          var extraSpins = 1 + Math.floor(Math.random() * 2); // 1-2 extra turns as it settles
-          homingTotalAngle = plan.angle + Math.PI * 2 * extraSpins;
+          homingTotalAngle = plan.angle + Math.PI * 2; // exactly one settling turn, never more
         }
         var homingEase = rollEase((p - BOUNCE_PHASE_END) / (1 - BOUNCE_PHASE_END));
         bouncePos.x = homingStartPos.x * (1 - homingEase);
