@@ -14,29 +14,28 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var faceNormals = [], faceUps = [];
   var rolling = false;
   var rollStart = 0;
-  var rollStartQuat = new THREE.Quaternion();
-  var rollAxis = new THREE.Vector3(1, 1, 1).normalize();
-  var rollTotalAngle = 0;
+  var rollTargetQuat = new THREE.Quaternion();
 
-  // Secondary wobble axes: pure visual flair layered on top of the guaranteed main
-  // spin. Their amplitude always decays to exactly 0 by the end (envelope = 1-eased,
-  // which is 0 at p=1), so they can never affect where the die actually lands.
-  var wobbleAxisA = new THREE.Vector3(0, 1, 0);
-  var wobbleAxisB = new THREE.Vector3(1, 0, 0);
-  var wobbleFreqA = 3, wobbleFreqB = 4, wobblePhaseB = 0;
-
-  // Purely cosmetic bounce-in-a-box: the die (always at full, constant size) carries
-  // real velocity and reflects off an invisible frame around the visible canvas, then
-  // homes back to dead center for the reveal. This only ever moves position — it
-  // never touches rotation or scale, so it can't influence which number is about to
-  // land (that's already fixed the moment startRoll runs).
+  // Bounce-in-a-box: the die (always at full, constant size) carries real velocity
+  // and reflects off an invisible frame around the visible canvas, then homes back
+  // to dead center for the reveal. While bouncing, the spin axis is derived from the
+  // CURRENT velocity direction each frame (like a ball rolling across a table), so
+  // the instant a wall flips the velocity, the spin direction visibly flips with it —
+  // a real billiard-cushion feel, not a spin that merely happens to coincide with hits.
+  // Only the final homing-phase corrective spin (computed once, from wherever the
+  // rolling motion left off) guarantees the exact target face — nothing here can
+  // change which number is about to land, that's fixed the moment startRoll runs.
   var BOUNCE_BOUND = 0.35;
   var BOUNCE_PHASE_END = 0.68; // fraction of ROLL_DURATION spent bouncing before homing in
+  var ROLL_RADIUS = 0.4; // smaller = faster apparent spin per unit of travel speed
   var bouncePos = new THREE.Vector2(0, 0);
   var bounceVel = new THREE.Vector2(0, 0);
   var homingStartPos = new THREE.Vector2(0, 0);
   var homingStarted = false;
   var lastBounceTime = null;
+  var homingRollAxis = new THREE.Vector3(0, 1, 0);
+  var homingRollStartQuat = new THREE.Quaternion();
+  var homingTotalAngle = 0;
 
   // Each face gets its own inscribed-triangle UV so its dedicated texture renders
   // centered on that face. Winding matches the geometry's outward CCW order
@@ -226,21 +225,7 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   function startRoll(resultNumber) {
     if (!renderer || !dieGroup) return;
     var faceIndex = Math.max(1, Math.min(20, resultNumber || 20)) - 1;
-    var target = computeFaceQuaternion(faceIndex);
-
-    rollStartQuat.copy(dieGroup.quaternion);
-    var plan = computeSpinPlan(rollStartQuat, target);
-    var extraSpins = 3 + Math.floor(Math.random() * 4); // 3-6 full turns of visible flair
-    rollAxis.copy(plan.axis);
-    rollTotalAngle = plan.angle + Math.PI * 2 * extraSpins;
-
-    // Randomize the two wobble axes each roll (kept apart from rollAxis so the
-    // tumble reads as multi-directional instead of a single flat spin).
-    wobbleAxisA.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
-    wobbleAxisB.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
-    wobbleFreqA = 4 + Math.random() * 3;
-    wobbleFreqB = 6 + Math.random() * 4;
-    wobblePhaseB = Math.random() * Math.PI * 2;
+    rollTargetQuat.copy(computeFaceQuaternion(faceIndex));
 
     var launchAngle = Math.random() * Math.PI * 2;
     var launchSpeed = 1.7 + Math.random() * 0.7;
@@ -260,17 +245,6 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     if (rolling) {
       var elapsed = now - rollStart;
       var p = Math.min(elapsed / ROLL_DURATION, 1);
-      var eased = rollEase(p);
-      var rot = new THREE.Quaternion().setFromAxisAngle(rollAxis, rollTotalAngle * eased);
-      var mainQuat = new THREE.Quaternion().multiplyQuaternions(rot, rollStartQuat);
-
-      // Wobble envelope is exactly 0 at p=1 (eased(1)=1), so this can only ever
-      // affect the mid-roll tumble — the landing orientation is untouched.
-      var envelope = 1 - eased;
-      var wobbleA = new THREE.Quaternion().setFromAxisAngle(wobbleAxisA, 0.32 * envelope * Math.sin(p * wobbleFreqA * Math.PI * 2));
-      var wobbleB = new THREE.Quaternion().setFromAxisAngle(wobbleAxisB, 0.2 * envelope * Math.sin(p * wobbleFreqB * Math.PI * 2 + wobblePhaseB));
-      var wobble = new THREE.Quaternion().multiplyQuaternions(wobbleB, wobbleA);
-      dieGroup.quaternion.multiplyQuaternions(wobble, mainQuat);
 
       var dt = lastBounceTime === null ? 0.016 : Math.min((now - lastBounceTime) / 1000, 0.032);
       lastBounceTime = now;
@@ -282,11 +256,31 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
         else if (bouncePos.x < -BOUNCE_BOUND) { bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x); bounceVel.y += (Math.random() - 0.5) * 0.9; }
         if (bouncePos.y > BOUNCE_BOUND) { bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
         else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
+
+        // Roll in the direction of current travel — axis is perpendicular to
+        // velocity, so it flips the instant a wall reflects the velocity.
+        var speed = bounceVel.length();
+        if (speed > 1e-4) {
+          var rollAxisVec = new THREE.Vector3(-bounceVel.y, bounceVel.x, 0).normalize();
+          var deltaQ = new THREE.Quaternion().setFromAxisAngle(rollAxisVec, (speed / ROLL_RADIUS) * dt);
+          dieGroup.quaternion.premultiply(deltaQ);
+        }
       } else {
-        if (!homingStarted) { homingStartPos.copy(bouncePos); homingStarted = true; }
+        if (!homingStarted) {
+          homingStarted = true;
+          homingStartPos.copy(bouncePos);
+          homingRollStartQuat.copy(dieGroup.quaternion);
+          var plan = computeSpinPlan(homingRollStartQuat, rollTargetQuat);
+          homingRollAxis.copy(plan.axis);
+          var extraSpins = 1 + Math.floor(Math.random() * 2); // 1-2 extra turns as it settles
+          homingTotalAngle = plan.angle + Math.PI * 2 * extraSpins;
+        }
         var homingEase = rollEase((p - BOUNCE_PHASE_END) / (1 - BOUNCE_PHASE_END));
         bouncePos.x = homingStartPos.x * (1 - homingEase);
         bouncePos.y = homingStartPos.y * (1 - homingEase);
+
+        var rot = new THREE.Quaternion().setFromAxisAngle(homingRollAxis, homingTotalAngle * homingEase);
+        dieGroup.quaternion.multiplyQuaternions(rot, homingRollStartQuat);
       }
 
       dieGroup.position.x = bouncePos.x;
