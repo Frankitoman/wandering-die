@@ -33,6 +33,7 @@
   var els = {};
   var activeCategory = 'all';
   var current = null; // { label, dc, low, high }
+  var threeActive = false;
 
   function cacheEls() {
     els.filters = document.getElementById('diceCategoryFilters');
@@ -40,6 +41,8 @@
     els.stage = document.getElementById('diceStage');
     els.stagePrompt = document.getElementById('diceStagePrompt');
     els.die = document.getElementById('diceD20');
+    els.dieCanvas = document.getElementById('diceD20Canvas');
+    els.dieNumber = document.getElementById('diceD20Number');
     els.rollBtn = document.getElementById('diceRollBtn');
     els.resultArea = document.getElementById('diceResultArea');
     els.rollNumber = document.getElementById('diceRollNumber');
@@ -92,21 +95,28 @@
   function rollDie() {
     if (!current || els.rollBtn.disabled) return;
     els.rollBtn.disabled = true;
-    els.die.classList.add('is-rolling');
     els.resultArea.hidden = true;
+
+    if (threeActive) {
+      global.WD3D.startRoll();
+    } else {
+      els.die.classList.add('is-rolling');
+    }
 
     var ticks = 0;
     var maxTicks = 14;
     var iv = setInterval(function () {
-      els.die.querySelector('span').textContent = String(1 + Math.floor(Math.random() * 20));
+      els.dieNumber.textContent = String(1 + Math.floor(Math.random() * 20));
       ticks++;
       if (ticks >= maxTicks) {
         clearInterval(iv);
         var finalRoll = 1 + Math.floor(Math.random() * 20);
-        els.die.querySelector('span').textContent = String(finalRoll);
-        els.die.classList.remove('is-rolling');
-        els.die.classList.add('is-landed');
-        setTimeout(function () { els.die.classList.remove('is-landed'); }, 500);
+        els.dieNumber.textContent = String(finalRoll);
+        if (!threeActive) {
+          els.die.classList.remove('is-rolling');
+          els.die.classList.add('is-landed');
+          setTimeout(function () { els.die.classList.remove('is-landed'); }, 500);
+        }
         showRollResult(finalRoll);
         els.rollBtn.disabled = false;
       }
@@ -132,9 +142,29 @@
     selectScenario(text, dc, t('dice_custom_low'), t('dice_custom_high'));
   }
 
+  function setupDie() {
+    function tryInit() {
+      if (threeActive) return;
+      if (global.WD3D && els.dieCanvas && global.WD3D.init(els.dieCanvas)) {
+        threeActive = true;
+      } else {
+        els.die.classList.add('d20--fallback');
+      }
+    }
+    if (global.WD3D) {
+      tryInit();
+    } else {
+      global.addEventListener('wd3d-ready', tryInit, { once: true });
+      setTimeout(function () {
+        if (!threeActive) els.die.classList.add('d20--fallback');
+      }, 2500);
+    }
+  }
+
   function init() {
     cacheEls();
     if (!els.filters) return;
+    setupDie();
     renderFilters();
     renderList();
     els.rollBtn.addEventListener('click', rollDie);
