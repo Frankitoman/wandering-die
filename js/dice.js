@@ -32,8 +32,19 @@
 
   var els = {};
   var activeCategory = 'all';
-  var current = null; // { label, dc, low, high }
+  var current = null; // { key, label, dc, low: [...], high: [...] }
   var threeActive = false;
+  var lastVariant = {};
+
+  // Picks a random phrasing from `list`, avoiding an immediate repeat of the
+  // last one shown for this exact scenario+direction (tracked by `key`).
+  function pickVariant(list, key) {
+    if (list.length === 1) return list[0];
+    var idx;
+    do { idx = Math.floor(Math.random() * list.length); } while (idx === lastVariant[key]);
+    lastVariant[key] = idx;
+    return list[idx];
+  }
 
   function cacheEls() {
     els.filters = document.getElementById('diceCategoryFilters');
@@ -76,14 +87,15 @@
     }).join('');
     els.list.querySelectorAll('.dice-scenario').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var s = SCENARIOS[parseInt(btn.getAttribute('data-idx'), 10)];
-        selectScenario(s.i18n[lang()].label, s.dc, s.i18n[lang()].low, s.i18n[lang()].high);
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        var s = SCENARIOS[idx];
+        selectScenario('scenario' + idx, s.i18n[lang()].label, s.dc, s.i18n[lang()].low, s.i18n[lang()].high);
       });
     });
   }
 
-  function selectScenario(label, dc, low, high) {
-    current = { label: label, dc: dc, low: low, high: high };
+  function selectScenario(key, label, dc, low, high) {
+    current = { key: key, label: label, dc: dc, low: low, high: high };
     els.stagePrompt.textContent = label;
     els.resultArea.hidden = true;
     els.stage.hidden = false;
@@ -131,7 +143,8 @@
   function showRollResult(roll) {
     els.rollNumber.textContent = t('dice_roll_result', { roll: roll });
     var success = roll >= current.dc;
-    els.outcome.textContent = success ? current.high : current.low;
+    var pool = success ? current.high : current.low;
+    els.outcome.textContent = pickVariant(pool, current.key + (success ? '_high' : '_low'));
     els.resultArea.hidden = false;
   }
 
@@ -141,7 +154,7 @@
     var dc = estimateDC(text);
     els.customNote.hidden = false;
     els.customNote.textContent = t('dice_custom_dc_detected');
-    selectScenario(text, dc, t('dice_custom_low'), t('dice_custom_high'));
+    selectScenario('custom', text, dc, [t('dice_custom_low')], [t('dice_custom_high')]);
   }
 
   function setupDie() {

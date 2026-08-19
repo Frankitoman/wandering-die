@@ -16,6 +16,13 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var rollAxis = new THREE.Vector3(1, 1, 1).normalize();
   var rollTotalAngle = 0;
 
+  // Secondary wobble axes: pure visual flair layered on top of the guaranteed main
+  // spin. Their amplitude always decays to exactly 0 by the end (envelope = 1-eased,
+  // which is 0 at p=1), so they can never affect where the die actually lands.
+  var wobbleAxisA = new THREE.Vector3(0, 1, 0);
+  var wobbleAxisB = new THREE.Vector3(1, 0, 0);
+  var wobbleFreqA = 3, wobbleFreqB = 4, wobblePhaseB = 0;
+
   // Each face gets its own inscribed-triangle UV so its dedicated texture renders
   // centered on that face. Winding matches the geometry's outward CCW order
   // (verified against attributes.normal) so numerals aren't mirrored.
@@ -40,37 +47,64 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     return { axis: new THREE.Vector3(delta.x / s, delta.y / s, delta.z / s), angle: 2 * Math.acos(w) };
   }
 
-  function makeFaceTexture(n) {
-    var size = 256;
+  function configureTexture(tex, maxAniso) {
+    if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = true;
+    tex.anisotropy = maxAniso;
+    return tex;
+  }
+
+  // Draws at the actual centroid of the sampled UV triangle (accounting for
+  // CanvasTexture's default flipY), not the canvas's geometric center.
+  function numeralPos(size) {
+    return { x: size * 0.5, y: size * (1 - UV_CENTROID_V) };
+  }
+
+  function makeFaceTexture(n, maxAniso) {
+    var size = 384;
     var canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     var ctx = canvas.getContext('2d');
 
-    var grad = ctx.createRadialGradient(size * 0.35, size * 0.28, size * 0.08, size * 0.5, size * 0.55, size * 0.78);
-    grad.addColorStop(0, '#3c2f5c');
-    grad.addColorStop(0.55, '#241d33');
-    grad.addColorStop(1, '#130f1c');
+    var grad = ctx.createRadialGradient(size * 0.35, size * 0.28, size * 0.1, size * 0.5, size * 0.55, size * 0.78);
+    grad.addColorStop(0, '#453768');
+    grad.addColorStop(0.55, '#291f3c');
+    grad.addColorStop(1, '#140f1e');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, size, size);
 
-    // Draw at the actual centroid of the sampled UV triangle (accounting for
-    // CanvasTexture's default flipY), not the canvas's geometric center.
-    var cx = size * 0.5;
-    var cy = size * (1 - UV_CENTROID_V);
-    ctx.font = '600 ' + Math.round(size * 0.22) + 'px "EB Garamond", Georgia, serif';
+    var pos = numeralPos(size);
+    ctx.font = '700 ' + Math.round(size * 0.24) + 'px "EB Garamond", Georgia, serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#eeecf6';
-    ctx.fillText(String(n), cx, cy);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(String(n), pos.x, pos.y);
 
-    var tex = new THREE.CanvasTexture(canvas);
-    if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearMipmapLinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.generateMipmaps = true;
-    tex.anisotropy = 4;
-    return tex;
+    return configureTexture(new THREE.CanvasTexture(canvas), maxAniso);
+  }
+
+  // Numeral-only, white on black, used as an emissive map so the number glows
+  // with its own light and stays crisp regardless of how the face is lit.
+  function makeEmissiveTexture(n, maxAniso) {
+    var size = 384;
+    var canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, size, size);
+
+    var pos = numeralPos(size);
+    ctx.font = '700 ' + Math.round(size * 0.24) + 'px "EB Garamond", Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(String(n), pos.x, pos.y);
+
+    return configureTexture(new THREE.CanvasTexture(canvas), maxAniso);
   }
 
   function buildNumberedGeometry() {
@@ -143,10 +177,14 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     var geometry = buildNumberedGeometry();
     cacheFaceOrientations(geometry);
 
+    var maxAniso = renderer.capabilities.getMaxAnisotropy();
     var materials = [];
     for (var n = 1; n <= 20; n++) {
       materials.push(new THREE.MeshPhysicalMaterial({
-        map: makeFaceTexture(n),
+        map: makeFaceTexture(n, maxAniso),
+        emissiveMap: makeEmissiveTexture(n, maxAniso),
+        emissive: new THREE.Color(0xffffff),
+        emissiveIntensity: 0.55,
         metalness: 0.32,
         roughness: 0.3,
         clearcoat: 0.6,
@@ -181,6 +219,14 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     rollAxis.copy(plan.axis);
     rollTotalAngle = plan.angle + Math.PI * 2 * extraSpins;
 
+    // Randomize the two wobble axes each roll (kept apart from rollAxis so the
+    // tumble reads as multi-directional instead of a single flat spin).
+    wobbleAxisA.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+    wobbleAxisB.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+    wobbleFreqA = 4 + Math.random() * 3;
+    wobbleFreqB = 6 + Math.random() * 4;
+    wobblePhaseB = Math.random() * Math.PI * 2;
+
     rolling = true;
     rollStart = performance.now();
   }
@@ -194,7 +240,16 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
       var p = Math.min(elapsed / ROLL_DURATION, 1);
       var eased = rollEase(p);
       var rot = new THREE.Quaternion().setFromAxisAngle(rollAxis, rollTotalAngle * eased);
-      dieGroup.quaternion.multiplyQuaternions(rot, rollStartQuat);
+      var mainQuat = new THREE.Quaternion().multiplyQuaternions(rot, rollStartQuat);
+
+      // Wobble envelope is exactly 0 at p=1 (eased(1)=1), so this can only ever
+      // affect the mid-roll tumble — the landing orientation is untouched.
+      var envelope = 1 - eased;
+      var wobbleA = new THREE.Quaternion().setFromAxisAngle(wobbleAxisA, 0.32 * envelope * Math.sin(p * wobbleFreqA * Math.PI * 2));
+      var wobbleB = new THREE.Quaternion().setFromAxisAngle(wobbleAxisB, 0.2 * envelope * Math.sin(p * wobbleFreqB * Math.PI * 2 + wobblePhaseB));
+      var wobble = new THREE.Quaternion().multiplyQuaternions(wobbleB, wobbleA);
+      dieGroup.quaternion.multiplyQuaternions(wobble, mainQuat);
+
       dieGroup.position.y = Math.sin(eased * Math.PI) * 0.3;
       var s = 1 + Math.sin(eased * Math.PI) * 0.05;
       dieGroup.scale.set(s, s, s);
