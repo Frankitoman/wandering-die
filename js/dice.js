@@ -99,9 +99,10 @@
     els.resultArea.hidden = true;
 
     var totalDuration = (threeActive && global.WD3D.ROLL_DURATION) ? global.WD3D.ROLL_DURATION : FALLBACK_ROLL_DURATION;
+    var finalRoll = 1 + Math.floor(Math.random() * 20);
 
     if (threeActive) {
-      global.WD3D.startRoll();
+      global.WD3D.startRoll(finalRoll);
     } else {
       els.die.classList.add('is-rolling');
     }
@@ -110,7 +111,6 @@
     function tick() {
       var elapsed = performance.now() - start;
       if (elapsed >= totalDuration) {
-        var finalRoll = 1 + Math.floor(Math.random() * 20);
         els.dieNumber.textContent = String(finalRoll);
         if (!threeActive) {
           els.die.classList.remove('is-rolling');
