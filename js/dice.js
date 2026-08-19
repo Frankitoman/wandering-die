@@ -46,8 +46,7 @@
     els.rollBtn = document.getElementById('diceRollBtn');
     els.resultArea = document.getElementById('diceResultArea');
     els.rollNumber = document.getElementById('diceRollNumber');
-    els.outcomeLow = document.getElementById('diceOutcomeLow');
-    els.outcomeHigh = document.getElementById('diceOutcomeHigh');
+    els.outcome = document.getElementById('diceOutcome');
     els.againBtn = document.getElementById('diceAgainBtn');
     els.customInput = document.getElementById('diceCustomInput');
     els.customBtn = document.getElementById('diceCustomBtn');
@@ -92,10 +91,14 @@
     els.stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
+  var FALLBACK_ROLL_DURATION = 1700;
+
   function rollDie() {
     if (!current || els.rollBtn.disabled) return;
     els.rollBtn.disabled = true;
     els.resultArea.hidden = true;
+
+    var totalDuration = (threeActive && global.WD3D.ROLL_DURATION) ? global.WD3D.ROLL_DURATION : FALLBACK_ROLL_DURATION;
 
     if (threeActive) {
       global.WD3D.startRoll();
@@ -103,13 +106,10 @@
       els.die.classList.add('is-rolling');
     }
 
-    var ticks = 0;
-    var maxTicks = 14;
-    var iv = setInterval(function () {
-      els.dieNumber.textContent = String(1 + Math.floor(Math.random() * 20));
-      ticks++;
-      if (ticks >= maxTicks) {
-        clearInterval(iv);
+    var start = performance.now();
+    function tick() {
+      var elapsed = performance.now() - start;
+      if (elapsed >= totalDuration) {
         var finalRoll = 1 + Math.floor(Math.random() * 20);
         els.dieNumber.textContent = String(finalRoll);
         if (!threeActive) {
@@ -119,17 +119,20 @@
         }
         showRollResult(finalRoll);
         els.rollBtn.disabled = false;
+        return;
       }
-    }, 70);
+      els.dieNumber.textContent = String(1 + Math.floor(Math.random() * 20));
+      var progress = elapsed / totalDuration;
+      var delay = 40 + Math.pow(progress, 2.4) * 260;
+      setTimeout(tick, delay);
+    }
+    tick();
   }
 
   function showRollResult(roll) {
     els.rollNumber.textContent = t('dice_roll_result', { roll: roll });
     var success = roll >= current.dc;
-    els.outcomeLow.textContent = current.low;
-    els.outcomeHigh.textContent = current.high;
-    els.outcomeLow.classList.toggle('is-chosen', !success);
-    els.outcomeHigh.classList.toggle('is-chosen', success);
+    els.outcome.textContent = success ? current.high : current.low;
     els.resultArea.hidden = false;
   }
 

@@ -32,6 +32,7 @@ body {
   font-size: 18px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
@@ -51,6 +52,15 @@ body::before {
     radial-gradient(50vw 50vw at 100% 20%, rgba(140, 111, 224, 0.1), transparent 55%),
     var(--bg);
 }
+
+/* ---------- Ambient background dice ---------- */
+.bg-die { position: absolute; pointer-events: none; color: var(--violet-bright); opacity: 0.07; z-index: -1; }
+.bg-die--a { animation: bg-float-a 17s ease-in-out infinite; }
+.bg-die--b { animation: bg-float-b 21s ease-in-out infinite; }
+.bg-die--c { animation: bg-float-c 25s ease-in-out infinite; }
+@keyframes bg-float-a { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(9deg); } }
+@keyframes bg-float-b { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(15px) rotate(-11deg); } }
+@keyframes bg-float-c { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(10px, -12px) rotate(7deg); } }
 
 /* ---------- Reveal on scroll ---------- */
 [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity 0.7s ease, transform 0.7s ease; }
@@ -189,12 +199,12 @@ body::before {
 .dice-stage__prompt { font-family: var(--font-display); font-size: 1.2rem; color: var(--silver-bright); margin-bottom: 26px; line-height: 1.4; }
 
 .d20 {
-  width: 170px; height: 170px; margin: 0 auto 26px; position: relative;
+  width: 230px; height: 230px; margin: 0 auto 30px; position: relative;
 }
-.d20 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 26px var(--glow)); }
+.d20 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 32px var(--glow)); }
 .d20__number {
   position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  display: flex; align-items: center; justify-content: center;
+  display: none; align-items: center; justify-content: center;
   font-family: var(--font-hero); font-size: 2.3rem; color: var(--silver-bright);
   text-shadow: 0 0 16px var(--glow), 0 2px 10px rgba(0,0,0,0.75);
 }
@@ -207,7 +217,7 @@ body::before {
   box-shadow: inset 0 0 30px rgba(140,111,224,0.25), 0 0 40px -10px var(--glow);
 }
 .d20.d20--fallback canvas { display: none; }
-.d20.d20--fallback .d20__number { font-size: 2.6rem; }
+.d20.d20--fallback .d20__number { display: flex; font-size: 2.9rem; }
 .d20.d20--fallback.is-rolling { animation: d20-tumble 0.85s cubic-bezier(.36,.15,.24,.95) infinite; }
 .d20.d20--fallback.is-landed { animation: d20-land 0.55s ease; }
 @keyframes d20-tumble {
@@ -226,12 +236,18 @@ body::before {
   100% { transform: translate(0, 0) scale(1); }
 }
 
-.dice-result { margin-top: 10px; }
+.dice-result { margin-top: 10px; animation: dice-result-in 0.4s ease; }
 .dice-result__roll { font-family: var(--font-display); font-size: 1.1rem; color: var(--silver-bright); margin-bottom: 16px; }
-.dice-outcomes { display: flex; flex-direction: column; gap: 10px; }
-.dice-outcome { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; font-size: 0.98rem; color: var(--muted); background: var(--bg-alt); opacity: 0.55; transition: all 0.3s ease; }
-.dice-outcome.is-chosen { opacity: 1; border-color: var(--violet-bright); color: var(--silver-bright); background: rgba(140,111,224,0.12); box-shadow: 0 0 24px -8px var(--glow); }
+.dice-outcome {
+  border: 1px solid var(--violet-bright); border-radius: var(--radius-sm); padding: 16px 18px;
+  font-size: 1.08rem; line-height: 1.4; color: var(--silver-bright);
+  background: rgba(140,111,224,0.14); box-shadow: 0 0 26px -8px var(--glow);
+}
 .dice-again { margin-top: 18px; }
+@keyframes dice-result-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 /* ---------- Footer ---------- */
 .footer { padding: 50px 0 36px; text-align: center; border-top: 1px solid var(--line); }
