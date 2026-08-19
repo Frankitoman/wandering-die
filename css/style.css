@@ -175,10 +175,9 @@ body::before {
 .dice-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
 .dice-filter { background: var(--bg-alt); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 7px 15px; font-size: 0.85rem; transition: all 0.2s ease; }
 .dice-filter.is-active, .dice-filter:hover { border-color: var(--violet-bright); color: var(--silver-bright); }
-.dice-scenario-list { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
-.dice-scenario { display: flex; justify-content: space-between; gap: 10px; align-items: center; text-align: left; background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; color: var(--silver); font-size: 0.95rem; transition: border-color 0.2s ease; }
+.dice-scenario-list { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
+.dice-scenario { display: block; width: 100%; text-align: left; background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; color: var(--silver); font-size: 1.1rem; line-height: 1.4; transition: border-color 0.2s ease; }
 .dice-scenario:hover { border-color: var(--violet-bright); }
-.dice-scenario__dc { font-family: var(--font-display); font-size: 0.75rem; color: var(--violet-bright); flex-shrink: 0; }
 .dice-custom { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--line); }
 .dice-custom__title { font-size: 0.92rem; color: var(--muted); margin-bottom: 10px; font-style: italic; }
 .dice-custom__row { display: flex; gap: 8px; }
@@ -187,8 +186,7 @@ body::before {
 .dice-custom__note { margin-top: 10px; font-size: 0.85rem; color: var(--violet-bright); }
 
 .dice-stage { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 36px 28px; text-align: center; position: sticky; top: 100px; }
-.dice-stage__prompt { font-family: var(--font-display); font-size: 1.2rem; color: var(--silver-bright); margin-bottom: 10px; line-height: 1.4; }
-.dice-stage__dc { display: inline-block; font-family: var(--font-display); font-size: 0.8rem; color: var(--violet-bright); border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 14px; margin-bottom: 26px; }
+.dice-stage__prompt { font-family: var(--font-display); font-size: 1.2rem; color: var(--silver-bright); margin-bottom: 26px; line-height: 1.4; }
 
 .d20 {
   width: 150px; height: 150px; margin: 0 auto 26px; position: relative;
@@ -197,13 +195,25 @@ body::before {
   border: 1px solid var(--line-strong);
   display: flex; align-items: center; justify-content: center;
   box-shadow: inset 0 0 30px rgba(140,111,224,0.25), 0 0 40px -10px var(--glow);
-  transition: transform 0.2s ease;
 }
 .d20 span { font-family: var(--font-hero); font-size: 2.6rem; color: var(--silver-bright); text-shadow: 0 0 18px var(--glow); }
-.d20.is-rolling { animation: d20-spin 0.7s linear infinite; }
-.d20.is-landed { animation: d20-land 0.5s ease; }
-@keyframes d20-spin { from { transform: rotate(0deg) scale(1.02); } to { transform: rotate(360deg) scale(1.02); } }
-@keyframes d20-land { 0% { transform: scale(1.18); } 60% { transform: scale(0.95); } 100% { transform: scale(1); } }
+.d20.is-rolling { animation: d20-tumble 0.85s cubic-bezier(.36,.15,.24,.95) infinite; }
+.d20.is-landed { animation: d20-land 0.55s ease; }
+@keyframes d20-tumble {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  14%  { transform: translate(-12px, -26px) rotate(80deg); }
+  28%  { transform: translate(10px, -40px) rotate(165deg); }
+  42%  { transform: translate(-16px, -20px) rotate(245deg); }
+  57%  { transform: translate(14px, -6px) rotate(320deg); }
+  71%  { transform: translate(-9px, -16px) rotate(400deg); }
+  85%  { transform: translate(6px, -4px) rotate(470deg); }
+  100% { transform: translate(0, 0) rotate(540deg); }
+}
+@keyframes d20-land {
+  0% { transform: translate(0, -16px) scale(1.16); }
+  55% { transform: translate(0, 5px) scale(0.94); }
+  100% { transform: translate(0, 0) scale(1); }
+}
 
 .dice-result { margin-top: 10px; }
 .dice-result__roll { font-family: var(--font-display); font-size: 1.1rem; color: var(--silver-bright); margin-bottom: 16px; }

@@ -39,7 +39,6 @@
     els.list = document.getElementById('diceScenarioList');
     els.stage = document.getElementById('diceStage');
     els.stagePrompt = document.getElementById('diceStagePrompt');
-    els.dcBadge = document.getElementById('diceDcBadge');
     els.die = document.getElementById('diceD20');
     els.rollBtn = document.getElementById('diceRollBtn');
     els.resultArea = document.getElementById('diceResultArea');
@@ -72,8 +71,7 @@
     var L = lang();
     var items = SCENARIOS.filter(function (s) { return activeCategory === 'all' || s.category === activeCategory; });
     els.list.innerHTML = items.map(function (s, i) {
-      return '<button type="button" class="dice-scenario" data-idx="' + SCENARIOS.indexOf(s) + '">' +
-        '<span>' + s.i18n[L].label + '</span><span class="dice-scenario__dc">DC ' + s.dc + '</span></button>';
+      return '<button type="button" class="dice-scenario" data-idx="' + SCENARIOS.indexOf(s) + '">' + s.i18n[L].label + '</button>';
     }).join('');
     els.list.querySelectorAll('.dice-scenario').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -86,7 +84,6 @@
   function selectScenario(label, dc, low, high) {
     current = { label: label, dc: dc, low: low, high: high };
     els.stagePrompt.textContent = label;
-    els.dcBadge.textContent = t('dice_dc_label', { dc: dc });
     els.resultArea.hidden = true;
     els.stage.hidden = false;
     els.stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -131,7 +128,7 @@
     if (!text) return;
     var dc = estimateDC(text);
     els.customNote.hidden = false;
-    els.customNote.textContent = t('dice_custom_dc_detected', { dc: dc });
+    els.customNote.textContent = t('dice_custom_dc_detected');
     selectScenario(text, dc, t('dice_custom_low'), t('dice_custom_high'));
   }
 
