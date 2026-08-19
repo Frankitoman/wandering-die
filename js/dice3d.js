@@ -6,20 +6,15 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
   var SIZE = 190;
   var RADIUS = 1.0; // kept safely inside the camera's visible frustum so vertices never clip the frame
-  var SPIN_DURATION = 1900;   // fast decaying spin
-  var SETTLE_DURATION = 750;  // ease into the resting orientation that shows the rolled number
-  var ROLL_DURATION = SPIN_DURATION + SETTLE_DURATION;
+  var ROLL_DURATION = 2800; // one continuous spin-to-stop, no separate correction phase
 
   var renderer, scene, camera, dieGroup;
   var faceNormals = [], faceUps = [];
-  var rollPhase = 'idle'; // idle | spin | settle
-  var rollStart = 0, settleStart = 0;
-  var spinAxis = new THREE.Vector3(1, 1, 1).normalize();
-  var spinSpeedBase = 10;
-  var settleStartQuat = new THREE.Quaternion();
-  var settleTargetQuat = new THREE.Quaternion();
-  var idleTime = 0;
-  var lastTime = null;
+  var rolling = false;
+  var rollStart = 0;
+  var rollStartQuat = new THREE.Quaternion();
+  var rollAxis = new THREE.Vector3(1, 1, 1).normalize();
+  var rollTotalAngle = 0;
 
   // Each face gets its own inscribed-triangle UV so its dedicated texture renders
   // centered on that face. Winding matches the geometry's outward CCW order
@@ -27,7 +22,21 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var UV_PATTERN = [0.5, 0.92, 0.08, 0.08, 0.92, 0.08];
   var UV_CENTROID_V = (UV_PATTERN[1] + UV_PATTERN[3] + UV_PATTERN[5]) / 3;
 
-  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+  function easeOutQuint(t) { return 1 - Math.pow(1 - t, 5); }
+
+  // Decomposes the rotation from `from` to `to` into a single axis + shortest angle,
+  // so the whole roll can spin around ONE fixed axis and land exactly on target
+  // (adding whole 2*PI turns to that angle never changes where it ends up).
+  function computeSpinPlan(from, to) {
+    var delta = to.clone().multiply(from.clone().invert());
+    if (delta.w < 0) { delta.x *= -1; delta.y *= -1; delta.z *= -1; delta.w *= -1; }
+    var w = THREE.MathUtils.clamp(delta.w, -1, 1);
+    var s = Math.sqrt(1 - w * w);
+    if (s < 1e-6) {
+      return { axis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(), angle: 0 };
+    }
+    return { axis: new THREE.Vector3(delta.x / s, delta.y / s, delta.z / s), angle: 2 * Math.acos(w) };
+  }
 
   function makeFaceTexture(n) {
     var size = 256;
@@ -161,53 +170,39 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
   function startRoll(resultNumber) {
     if (!renderer || !dieGroup) return;
-    rollPhase = 'spin';
-    rollStart = performance.now();
-    lastTime = null;
-    spinAxis.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
-    spinSpeedBase = 9 + Math.random() * 5;
     var faceIndex = Math.max(1, Math.min(20, resultNumber || 20)) - 1;
-    settleTargetQuat.copy(computeFaceQuaternion(faceIndex));
+    var target = computeFaceQuaternion(faceIndex);
+
+    rollStartQuat.copy(dieGroup.quaternion);
+    var plan = computeSpinPlan(rollStartQuat, target);
+    var extraSpins = 3 + Math.floor(Math.random() * 4); // 3-6 full turns of visible flair
+    rollAxis.copy(plan.axis);
+    rollTotalAngle = plan.angle + Math.PI * 2 * extraSpins;
+
+    rolling = true;
+    rollStart = performance.now();
   }
 
   function animate(now) {
     requestAnimationFrame(animate);
     if (!renderer || !dieGroup) return;
 
-    var dt = lastTime === null ? 0.016 : Math.min((now - lastTime) / 1000, 0.05);
-    lastTime = now;
-
-    if (rollPhase === 'spin') {
+    if (rolling) {
       var elapsed = now - rollStart;
-      var p = Math.min(elapsed / SPIN_DURATION, 1);
-      var speed = spinSpeedBase * Math.pow(1 - p, 1.7);
-      var deltaQuat = new THREE.Quaternion().setFromAxisAngle(spinAxis, speed * dt);
-      dieGroup.quaternion.premultiply(deltaQuat);
-      dieGroup.position.y = Math.sin(p * Math.PI) * 0.34;
-      var s = 1 + Math.sin(p * Math.PI) * 0.06;
+      var p = Math.min(elapsed / ROLL_DURATION, 1);
+      var eased = easeOutQuint(p);
+      var rot = new THREE.Quaternion().setFromAxisAngle(rollAxis, rollTotalAngle * eased);
+      dieGroup.quaternion.multiplyQuaternions(rot, rollStartQuat);
+      dieGroup.position.y = Math.sin(p * Math.PI) * 0.3;
+      var s = 1 + Math.sin(p * Math.PI) * 0.05;
       dieGroup.scale.set(s, s, s);
       if (p >= 1) {
-        rollPhase = 'settle';
-        settleStart = now;
-        settleStartQuat.copy(dieGroup.quaternion);
-      }
-    } else if (rollPhase === 'settle') {
-      var e2 = now - settleStart;
-      var p2 = Math.min(e2 / SETTLE_DURATION, 1);
-      var eased2 = easeOutCubic(p2);
-      dieGroup.quaternion.slerpQuaternions(settleStartQuat, settleTargetQuat, eased2);
-      dieGroup.position.y = Math.sin((1 - p2) * Math.PI * 0.5) * 0.1 * (1 - p2);
-      var s2 = 1 + Math.sin((1 - p2) * Math.PI) * 0.015;
-      dieGroup.scale.set(s2, s2, s2);
-      if (p2 >= 1) {
-        rollPhase = 'idle';
-        dieGroup.quaternion.copy(settleTargetQuat);
+        rolling = false;
         dieGroup.position.y = 0;
         dieGroup.scale.set(1, 1, 1);
       }
-    } else {
-      // resting: hold the landed orientation exactly, no idle drift once a result has landed
     }
+    // resting: hold the landed orientation exactly, no idle drift once a result has landed
     renderer.render(scene, camera);
   }
 
