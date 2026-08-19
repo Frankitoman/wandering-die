@@ -23,6 +23,20 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var wobbleAxisB = new THREE.Vector3(1, 0, 0);
   var wobbleFreqA = 3, wobbleFreqB = 4, wobblePhaseB = 0;
 
+  // Purely cosmetic bounce-in-a-box: while shrunk down, the die carries real
+  // velocity and reflects off an invisible frame around the visible canvas, then
+  // homes back to dead center as it regrows to full size for the reveal. This only
+  // ever moves position/scale — it never touches rotation, so it can't influence
+  // which number is about to land (that's already fixed the moment startRoll runs).
+  var BOUNCE_BOUND = 0.42;
+  var BOUNCE_SCALE = 0.55;
+  var BOUNCE_PHASE_END = 0.68; // fraction of ROLL_DURATION spent bouncing before homing in
+  var bouncePos = new THREE.Vector2(0, 0);
+  var bounceVel = new THREE.Vector2(0, 0);
+  var homingStartPos = new THREE.Vector2(0, 0);
+  var homingStarted = false;
+  var lastBounceTime = null;
+
   // Each face gets its own inscribed-triangle UV so its dedicated texture renders
   // centered on that face. Winding matches the geometry's outward CCW order
   // (verified against attributes.normal) so numerals aren't mirrored.
@@ -227,6 +241,13 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     wobbleFreqB = 6 + Math.random() * 4;
     wobblePhaseB = Math.random() * Math.PI * 2;
 
+    var launchAngle = Math.random() * Math.PI * 2;
+    var launchSpeed = 1.7 + Math.random() * 0.7;
+    bouncePos.set(0, 0);
+    bounceVel.set(Math.cos(launchAngle) * launchSpeed, Math.sin(launchAngle) * launchSpeed);
+    homingStarted = false;
+    lastBounceTime = null;
+
     rolling = true;
     rollStart = performance.now();
   }
@@ -250,11 +271,32 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
       var wobble = new THREE.Quaternion().multiplyQuaternions(wobbleB, wobbleA);
       dieGroup.quaternion.multiplyQuaternions(wobble, mainQuat);
 
-      dieGroup.position.y = Math.sin(eased * Math.PI) * 0.3;
-      var s = 1 + Math.sin(eased * Math.PI) * 0.05;
+      var dt = lastBounceTime === null ? 0.016 : Math.min((now - lastBounceTime) / 1000, 0.032);
+      lastBounceTime = now;
+
+      if (p < BOUNCE_PHASE_END) {
+        bouncePos.x += bounceVel.x * dt;
+        bouncePos.y += bounceVel.y * dt;
+        if (bouncePos.x > BOUNCE_BOUND) { bouncePos.x = BOUNCE_BOUND; bounceVel.x = -Math.abs(bounceVel.x); bounceVel.y += (Math.random() - 0.5) * 0.9; }
+        else if (bouncePos.x < -BOUNCE_BOUND) { bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x); bounceVel.y += (Math.random() - 0.5) * 0.9; }
+        if (bouncePos.y > BOUNCE_BOUND) { bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
+        else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
+      } else {
+        if (!homingStarted) { homingStartPos.copy(bouncePos); homingStarted = true; }
+        var homingEase = rollEase((p - BOUNCE_PHASE_END) / (1 - BOUNCE_PHASE_END));
+        bouncePos.x = homingStartPos.x * (1 - homingEase);
+        bouncePos.y = homingStartPos.y * (1 - homingEase);
+      }
+
+      var growEase = p < BOUNCE_PHASE_END ? 0 : rollEase((p - BOUNCE_PHASE_END) / (1 - BOUNCE_PHASE_END));
+      var s = BOUNCE_SCALE + (1 - BOUNCE_SCALE) * growEase;
+      dieGroup.position.x = bouncePos.x;
+      dieGroup.position.y = bouncePos.y;
       dieGroup.scale.set(s, s, s);
+
       if (p >= 1) {
         rolling = false;
+        dieGroup.position.x = 0;
         dieGroup.position.y = 0;
         dieGroup.scale.set(1, 1, 1);
       }
