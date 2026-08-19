@@ -21,40 +21,50 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var idleTime = 0;
   var lastTime = null;
 
+  // Each face gets its own inscribed-triangle UV so its dedicated texture renders
+  // centered on that face. Winding matches the geometry's outward CCW order
+  // (verified against attributes.normal) so numerals aren't mirrored.
+  var UV_PATTERN = [0.5, 0.92, 0.08, 0.08, 0.92, 0.08];
+  var UV_CENTROID_V = (UV_PATTERN[1] + UV_PATTERN[3] + UV_PATTERN[5]) / 3;
+
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
   function makeFaceTexture(n) {
-    var size = 128;
+    var size = 256;
     var canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     var ctx = canvas.getContext('2d');
 
-    var grad = ctx.createRadialGradient(size * 0.35, size * 0.28, size * 0.05, size * 0.5, size * 0.55, size * 0.78);
+    var grad = ctx.createRadialGradient(size * 0.35, size * 0.28, size * 0.08, size * 0.5, size * 0.55, size * 0.78);
     grad.addColorStop(0, '#3c2f5c');
     grad.addColorStop(0.55, '#241d33');
     grad.addColorStop(1, '#130f1c');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, size, size);
 
-    var cx = size * 0.5, cy = size * 0.47;
-    ctx.font = '600 ' + Math.round(size * 0.26) + 'px "EB Garamond", Georgia, serif';
+    // Draw at the actual centroid of the sampled UV triangle (accounting for
+    // CanvasTexture's default flipY), not the canvas's geometric center.
+    var cx = size * 0.5;
+    var cy = size * (1 - UV_CENTROID_V);
+    ctx.font = '600 ' + Math.round(size * 0.22) + 'px "EB Garamond", Georgia, serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#e9e6f2';
+    ctx.fillStyle = '#eeecf6';
     ctx.fillText(String(n), cx, cy);
 
     var tex = new THREE.CanvasTexture(canvas);
     if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = true;
+    tex.anisotropy = 4;
     return tex;
   }
 
   function buildNumberedGeometry() {
     var geometry = new THREE.IcosahedronGeometry(RADIUS, 0);
-    // Each face gets its own inscribed-triangle UV so its dedicated texture renders
-    // centered on that face. Winding matches the geometry's outward CCW order
-    // (verified against attributes.normal) so numerals aren't mirrored.
-    var uvPattern = [0.5, 0.92, 0.08, 0.08, 0.92, 0.08];
+    var uvPattern = UV_PATTERN;
     var uvArray = new Float32Array(60 * 2);
     for (var f = 0; f < 20; f++) {
       uvArray.set(uvPattern, f * 6);

@@ -53,14 +53,18 @@ body::before {
     var(--bg);
 }
 
-/* ---------- Ambient background dice ---------- */
-.bg-die { position: absolute; pointer-events: none; color: var(--silver); opacity: 0.16; z-index: -1; }
-.bg-die--a { animation: bg-float-a 17s ease-in-out infinite; }
-.bg-die--b { animation: bg-float-b 21s ease-in-out infinite; }
-.bg-die--c { animation: bg-float-c 25s ease-in-out infinite; }
-@keyframes bg-float-a { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(9deg); } }
-@keyframes bg-float-b { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(15px) rotate(-11deg); } }
-@keyframes bg-float-c { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(10px, -12px) rotate(7deg); } }
+/* ---------- Ambient dice rain (fixed, spans the whole page) ---------- */
+.dice-rain { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
+.dice-rain__item {
+  position: absolute; top: -18vh; color: var(--silver); opacity: 0;
+  animation-name: dice-fall; animation-timing-function: linear; animation-iteration-count: infinite;
+}
+@keyframes dice-fall {
+  0% { transform: translateY(-18vh) rotate(0deg); opacity: 0; }
+  8% { opacity: 0.15; }
+  92% { opacity: 0.15; }
+  100% { transform: translateY(118vh) rotate(320deg); opacity: 0; }
+}
 
 /* ---------- Reveal on scroll ---------- */
 [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity 0.7s ease, transform 0.7s ease; }
@@ -117,9 +121,6 @@ body::before {
 .hero__title { font-family: var(--font-hero); font-size: clamp(2.4rem, 5.4vw, 4.4rem); line-height: 1.08; color: var(--silver-bright); text-shadow: 0 0 40px var(--glow); max-width: 920px; margin: 0 auto; }
 .hero__lead { margin: 26px auto 0; max-width: 620px; color: var(--muted); font-size: 1.2rem; line-height: 1.65; }
 .hero__actions { display: flex; gap: 16px; justify-content: center; margin-top: 38px; flex-wrap: wrap; }
-.hero__d20 { position: absolute; opacity: 0.16; color: var(--silver); pointer-events: none; }
-.hero__d20--a { top: 8%; left: 4%; width: 140px; }
-.hero__d20--b { bottom: 6%; right: 6%; width: 190px; }
 
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 30px; border-radius: 999px; font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.04em; border: 1px solid var(--line-strong); transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease; }
 .btn:hover { transform: translateY(-2px); }
