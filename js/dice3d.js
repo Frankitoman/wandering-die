@@ -11,11 +11,79 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var RADIUS = 1.5; // bigger physical die; camera distance above keeps it safely clear of clipping
   var ROLL_DURATION = 2800;
 
-  var renderer, scene, camera, dieGroup;
+  var renderer, scene, camera, dieGroup, dieContainer;
   var faceNormals = [], faceUps = [];
   var rolling = false;
   var rollStart = 0;
   var rollTargetQuat = new THREE.Quaternion();
+  var pendingResultNumber = 20;
+  var flourishTimeout = null;
+
+  // Procedural sound (no audio files): a short filtered noise "clack" on every wall
+  // bounce — the "rattling" BG3 is praised for — plus a landing tone, brighter for a
+  // natural 20 and lower/dissonant for a natural 1. Context is created lazily inside
+  // startRoll (always called from a click handler), which satisfies the browser's
+  // autoplay-needs-a-user-gesture requirement.
+  var audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { audioCtx = null; }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
+    return audioCtx;
+  }
+  var lastClackTime = 0;
+  function playClack(intensity) {
+    var ctx = ensureAudio();
+    if (!ctx) return;
+    var nowMs = ctx.currentTime * 1000;
+    if (nowMs - lastClackTime < 35) return; // avoid a double-clack when a corner hits both walls in one frame
+    lastClackTime = nowMs;
+    var t0 = ctx.currentTime;
+    var len = Math.floor(ctx.sampleRate * 0.035);
+    var buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+    var noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1500 + Math.random() * 900;
+    filter.Q.value = 1.1;
+    var gain = ctx.createGain();
+    var peak = Math.min(Math.max(intensity, 0), 1) * 0.3 + 0.04;
+    gain.gain.setValueAtTime(peak, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
+    noise.connect(filter).connect(gain).connect(ctx.destination);
+    noise.start(t0);
+    noise.stop(t0 + 0.06);
+  }
+  function playTone(freq, startOffset, duration, type, peak) {
+    var ctx = ensureAudio();
+    if (!ctx) return;
+    var t0 = ctx.currentTime + startOffset;
+    var osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.value = freq;
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(peak, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.05);
+  }
+  function playLanding(n) {
+    if (n === 20) {
+      [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { playTone(f, i * 0.07, 0.35, 'triangle', 0.2); });
+    } else if (n === 1) {
+      playTone(110, 0, 0.5, 'sawtooth', 0.16);
+      playTone(103.83, 0.02, 0.5, 'sawtooth', 0.12);
+    } else {
+      playTone(660, 0, 0.28, 'sine', 0.16);
+    }
+  }
 
   // Rotation is ONE unified, continuous process for the entire roll — never a separate
   // "decide the result now" phase, so there's nothing that can read as a late, staged
@@ -193,6 +261,7 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
   function init(canvas) {
     if (!canvas) return false;
+    dieContainer = canvas.parentElement;
     try {
       renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
     } catch (e) {
@@ -254,10 +323,18 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
   function startRoll(resultNumber) {
     if (!renderer || !dieGroup) return;
-    var faceIndex = Math.max(1, Math.min(20, resultNumber || 20)) - 1;
+    pendingResultNumber = Math.max(1, Math.min(20, resultNumber || 20));
+    var faceIndex = pendingResultNumber - 1;
     rollTargetQuat.copy(computeFaceQuaternion(faceIndex));
 
     rollQuat.copy(dieGroup.quaternion);
+
+    ensureAudio(); // create/unlock the audio context inside this click-driven call
+
+    if (dieContainer) {
+      dieContainer.classList.remove('is-nat20', 'is-nat1');
+      if (flourishTimeout) { clearTimeout(flourishTimeout); flourishTimeout = null; }
+    }
 
     var launchAngle = Math.random() * Math.PI * 2;
     var launchSpeed = 3.2 + Math.random() * 1.3;
@@ -298,10 +375,12 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
       bounceVel.y *= dampFactor;
       bouncePos.x += bounceVel.x * dt;
       bouncePos.y += bounceVel.y * dt;
-      if (bouncePos.x > BOUNCE_BOUND) { bouncePos.x = BOUNCE_BOUND; bounceVel.x = -Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
-      else if (bouncePos.x < -BOUNCE_BOUND) { bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
-      if (bouncePos.y > BOUNCE_BOUND) { bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
-      else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
+      var hitSpeed = 0;
+      if (bouncePos.x > BOUNCE_BOUND) { hitSpeed = Math.max(hitSpeed, Math.abs(bounceVel.x)); bouncePos.x = BOUNCE_BOUND; bounceVel.x = -Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
+      else if (bouncePos.x < -BOUNCE_BOUND) { hitSpeed = Math.max(hitSpeed, Math.abs(bounceVel.x)); bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
+      if (bouncePos.y > BOUNCE_BOUND) { hitSpeed = Math.max(hitSpeed, Math.abs(bounceVel.y)); bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
+      else if (bouncePos.y < -BOUNCE_BOUND) { hitSpeed = Math.max(hitSpeed, Math.abs(bounceVel.y)); bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
+      if (hitSpeed > 0) { playClack(hitSpeed / 4); }
       dieGroup.position.x = bouncePos.x;
       dieGroup.position.y = bouncePos.y;
 
@@ -343,6 +422,13 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
         dieGroup.quaternion.copy(rollQuat);
         dieGroup.position.x = 0;
         dieGroup.position.y = 0;
+
+        playLanding(pendingResultNumber);
+        if (dieContainer && (pendingResultNumber === 20 || pendingResultNumber === 1)) {
+          var flourishClass = pendingResultNumber === 20 ? 'is-nat20' : 'is-nat1';
+          dieContainer.classList.add(flourishClass);
+          flourishTimeout = setTimeout(function () { dieContainer.classList.remove(flourishClass); }, 1300);
+        }
       }
     }
     // resting: hold the landed orientation exactly, no idle drift once a result has landed

@@ -202,7 +202,18 @@ body::before {
 .d20 {
   width: 100%; max-width: 340px; aspect-ratio: 1 / 1; margin: 0 auto 30px; position: relative;
 }
-.d20 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 32px var(--glow)); }
+.d20 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 32px var(--glow)); transition: filter 0.25s ease; }
+
+/* Landing flourish — a bright pulse the instant the die settles, gold for a natural 20,
+   red for a natural 1, echoing BG3's flashy critical/fumble moment on the die itself. */
+.d20.is-nat20 canvas { filter: drop-shadow(0 0 46px rgba(255, 208, 110, 0.95)) drop-shadow(0 0 90px rgba(255, 208, 110, 0.5)); animation: d20-flourish-pulse 1.3s ease-out; }
+.d20.is-nat1 canvas { filter: drop-shadow(0 0 46px rgba(255, 90, 90, 0.9)) drop-shadow(0 0 90px rgba(255, 90, 90, 0.45)); animation: d20-flourish-pulse 1.3s ease-out; }
+@keyframes d20-flourish-pulse {
+  0%   { transform: scale(1); }
+  12%  { transform: scale(1.08); }
+  30%  { transform: scale(0.99); }
+  100% { transform: scale(1); }
+}
 .d20__number {
   position: absolute; inset: 0; z-index: 2; pointer-events: none;
   display: none; align-items: center; justify-content: center;
