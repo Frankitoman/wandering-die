@@ -6,8 +6,8 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
   var SIZE = 340; // internal render resolution; CSS scales the box responsively without
                    // touching this, so the bounce frame's proportions stay identical everywhere
-  var CAMERA_DISTANCE = 9.6; // pulled back so the (now much larger) bounce frame still
-                              // fits entirely inside the visible frustum with margin to spare
+  var CAMERA_DISTANCE = 11.2; // pulled back so the (now even larger) bounce frame still
+                               // fits entirely inside the visible frustum with margin to spare
   var RADIUS = 1.0; // kept safely inside the camera's visible frustum so vertices never clip the frame
   var ROLL_DURATION = 2800;
 
@@ -17,31 +17,37 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var rollStart = 0;
   var rollTargetQuat = new THREE.Quaternion();
 
-  // Free-roll phase: genuine rolling-without-slipping physics. Every frame's spin axis
-  // is perpendicular to the CURRENT bounce velocity (in the screen plane) and scaled by
-  // how far the die actually traveled that frame — so the die visibly rolls in the
-  // direction it's moving, and the axis redirects the instant a wall reflects the
-  // velocity (the billiard effect), instead of a fixed axis merely coinciding with it.
-  // Accumulated frame-by-frame since it's freeform tumbling with no landing target yet.
+  // Rotation is ONE unified, continuous process for the entire roll — never a separate
+  // "decide the result now" phase, so there's nothing that can read as a late, staged
+  // correction. Every frame does two things to the SAME accumulated `rollQuat`:
+  //  1) Real rolling-without-slipping physics: spin axis perpendicular to the CURRENT
+  //     bounce velocity, magnitude scaled by how far the die actually traveled that
+  //     frame — so it visibly rolls in the direction it's moving, redirecting the
+  //     instant a wall reflects the velocity (the billiard effect). This fades to 0
+  //     like friction over the back stretch of the roll instead of cutting off.
+  //  2) An always-on, imperceptibly small pull toward the secretly pre-decided target,
+  //     recomputed fresh each frame from wherever the physics has ACTUALLY left the die
+  //     and closing a fraction of that gap proportional to dt / time-remaining. Early
+  //     on this is a tiny nudge (plenty of time left); it only grows as the deadline
+  //     approaches, and by construction closes exactly 100% of whatever gap is left on
+  //     the very last frame — guaranteeing an exact landing without ever needing a
+  //     single large, separate corrective spin.
   var rollQuat = new THREE.Quaternion();
   var ROLL_RADIUS = 0.55; // smaller = more visible spin per unit of travel
   var SPIN_ENERGY = 1.6; // extra multiplier over pure rolling-without-slip, for visual energy
-  var SPIN_FADE_START = 0.75; // fraction of the bounce phase where spin winds down to 0,
-                               // like friction — so it reaches zero speed exactly when
-                               // homing takes over instead of cutting off abruptly
+  var PHYS_FADE_START = 0.55; // fraction of the roll where physics starts winding down
+  var PHYS_FADE_END = 0.75; // ...and fraction where it's fully faded, like friction settling
+  var CORR_START = 0.68; // correction's own ramp starts at zero speed too, so a slight
+                          // overlap with the physics fade-out still hands off smoothly
+  var prevCorrEased = 0; // tracks how much of the correction's eased S-curve has been
+                          // applied so far, so each increment closes exactly the right
+                          // slice of whatever gap currently remains (self-correcting,
+                          // but with a proper zero-derivative-at-both-ends deceleration
+                          // instead of a constant-speed cruise + sudden stop)
 
-  // Homing phase: a single continuous formula computed once from the die's ACTUAL
-  // current orientation (not a fixed axis decided at launch), recomputed fresh from
-  // local progress every frame (never accumulated) — guarantees an exact, zero-jerk
-  // landing on the secretly pre-decided face. Shortest-path angle only (no extra
-  // spins), so the correction stays gentle across its whole time budget.
-  var homingAxis = new THREE.Vector3(0, 1, 0);
-  var homingStartQuat = new THREE.Quaternion();
-  var homingTotalAngle = 0;
-
-  var BOUNCE_BOUND = 1.1; // world-space half-extent of the bounce frame — enlarged so the
+  var BOUNCE_BOUND = 1.3; // world-space half-extent of the bounce frame — enlarged so the
                            // die can roam much more freely before homing back to center
-  var BOUNCE_PHASE_END = 0.55; // fraction of ROLL_DURATION spent on physically-coupled rolling
+  var BOUNCE_PHASE_END = 0.55; // fraction of ROLL_DURATION spent actively bouncing (position only)
   var bouncePos = new THREE.Vector2(0, 0);
   var bounceVel = new THREE.Vector2(0, 0);
   var homingStartPos = new THREE.Vector2(0, 0);
@@ -241,11 +247,12 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     rollQuat.copy(dieGroup.quaternion);
 
     var launchAngle = Math.random() * Math.PI * 2;
-    var launchSpeed = 2.7 + Math.random() * 1.1;
+    var launchSpeed = 3.2 + Math.random() * 1.3;
     bouncePos.set(0, 0);
     bounceVel.set(Math.cos(launchAngle) * launchSpeed, Math.sin(launchAngle) * launchSpeed);
     homingStarted = false;
     lastBounceTime = null;
+    prevCorrEased = 0;
 
     rolling = true;
     rollStart = performance.now();
@@ -262,56 +269,59 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
       var dt = lastBounceTime === null ? 0.016 : Math.min((now - lastBounceTime) / 1000, 0.032);
       lastBounceTime = now;
 
+      // --- Position: bounces freely around the frame, then eases back to dead center ---
       if (p < BOUNCE_PHASE_END) {
-        // --- Position: bounces freely around the (now much larger) frame ---
         bouncePos.x += bounceVel.x * dt;
         bouncePos.y += bounceVel.y * dt;
         if (bouncePos.x > BOUNCE_BOUND) { bouncePos.x = BOUNCE_BOUND; bounceVel.x = -Math.abs(bounceVel.x); bounceVel.y += (Math.random() - 0.5) * 0.9; }
         else if (bouncePos.x < -BOUNCE_BOUND) { bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x); bounceVel.y += (Math.random() - 0.5) * 0.9; }
         if (bouncePos.y > BOUNCE_BOUND) { bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
         else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
-        dieGroup.position.x = bouncePos.x;
-        dieGroup.position.y = bouncePos.y;
+      } else {
+        if (!homingStarted) { homingStarted = true; homingStartPos.copy(bouncePos); }
+        var posEase = rollEase((p - BOUNCE_PHASE_END) / (1 - BOUNCE_PHASE_END));
+        bouncePos.x = homingStartPos.x * (1 - posEase);
+        bouncePos.y = homingStartPos.y * (1 - posEase);
+      }
+      dieGroup.position.x = bouncePos.x;
+      dieGroup.position.y = bouncePos.y;
 
-        // --- Rotation: real rolling-without-slipping. Axis is always perpendicular to
-        // the CURRENT velocity, so the spin direction is causally tied to the movement
-        // direction at every instant and visibly redirects the moment a wall is hit —
-        // no more arbitrary axis that merely coincides with the bounce by chance.
-        var speed = bounceVel.length();
-        if (speed > 1e-4) {
-          var phaseFrac = p / BOUNCE_PHASE_END;
-          var spinFade = phaseFrac < SPIN_FADE_START ? 1 : rollEase(1 - (phaseFrac - SPIN_FADE_START) / (1 - SPIN_FADE_START));
+      // --- Rotation: physics the whole time (never a separate "decide now" phase) ---
+      var speed = bounceVel.length();
+      if (speed > 1e-4) {
+        var physFade = p < PHYS_FADE_START ? 1 : (p > PHYS_FADE_END ? 0 : rollEase(1 - (p - PHYS_FADE_START) / (PHYS_FADE_END - PHYS_FADE_START)));
+        if (physFade > 0) {
           var rollAxis = new THREE.Vector3(-bounceVel.y, bounceVel.x, 0).normalize();
-          var dAngle = (speed * dt / ROLL_RADIUS) * SPIN_ENERGY * spinFade;
+          var dAngle = (speed * dt / ROLL_RADIUS) * SPIN_ENERGY * physFade;
           rollQuat.premultiply(new THREE.Quaternion().setFromAxisAngle(rollAxis, dAngle));
         }
-        dieGroup.quaternion.copy(rollQuat);
-      } else {
-        if (!homingStarted) {
-          homingStarted = true;
-          homingStartPos.copy(bouncePos);
-          homingStartQuat.copy(dieGroup.quaternion);
-          var plan = computeSpinPlan(homingStartQuat, rollTargetQuat);
-          homingAxis.copy(plan.axis);
-          homingTotalAngle = plan.angle; // shortest path only — gentle over the full homing window
-        }
-        var homingEase = rollEase((p - BOUNCE_PHASE_END) / (1 - BOUNCE_PHASE_END));
-
-        // --- Position: eases back to dead center ---
-        bouncePos.x = homingStartPos.x * (1 - homingEase);
-        bouncePos.y = homingStartPos.y * (1 - homingEase);
-        dieGroup.position.x = bouncePos.x;
-        dieGroup.position.y = bouncePos.y;
-
-        // --- Rotation: single continuous formula from the die's actual current
-        // orientation to the target, recomputed fresh from local progress every frame
-        // (never accumulated) — guarantees an exact, zero-jerk landing.
-        var rot = new THREE.Quaternion().setFromAxisAngle(homingAxis, homingTotalAngle * homingEase);
-        dieGroup.quaternion.multiplyQuaternions(rot, homingStartQuat);
       }
+      // Gap-closing pull: only switches on once physics has fully settled (so the two
+      // never compete over the axis at the same moment), then follows a proper eased
+      // S-curve — zero speed at the start (an imperceptible handoff right as the tumble
+      // stops) and zero speed at the end (an exact, gentle stop on the real result).
+      // Recomputed fresh from wherever the die actually is each frame, so it's still
+      // self-correcting; only the fraction-of-remaining-gap it closes each step follows
+      // the eased curve instead of a raw proportional (constant-speed) closing rate.
+      if (p > CORR_START) {
+        var localP = Math.min((p - CORR_START) / (1 - CORR_START), 1);
+        var eased = rollEase(localP);
+        var stepFrac = (eased - prevCorrEased) / Math.max(1 - prevCorrEased, 1e-6);
+        stepFrac = Math.min(Math.max(stepFrac, 0), 1);
+        prevCorrEased = eased;
+        if (stepFrac > 0) {
+          var plan = computeSpinPlan(rollQuat, rollTargetQuat);
+          if (plan.angle > 1e-6) {
+            rollQuat.premultiply(new THREE.Quaternion().setFromAxisAngle(plan.axis, plan.angle * stepFrac));
+          }
+        }
+      }
+      dieGroup.quaternion.copy(rollQuat);
 
       if (p >= 1) {
         rolling = false;
+        rollQuat.copy(rollTargetQuat); // hard snap eliminates any residual float drift
+        dieGroup.quaternion.copy(rollQuat);
         dieGroup.position.x = 0;
         dieGroup.position.y = 0;
       }
