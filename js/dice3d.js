@@ -14,7 +14,6 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var renderer, scene, camera, dieGroup, dieContainer;
   var faceNormals = [], faceUps = [];
   var rolling = false;
-  var rollStart = 0;
   var rollTargetQuat = new THREE.Quaternion();
   var pendingResultNumber = 20;
   var flourishTimeout = null;
@@ -134,6 +133,15 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var bouncePos = new THREE.Vector2(0, 0);
   var bounceVel = new THREE.Vector2(0, 0);
   var lastBounceTime = null;
+  var rollElapsedMs = 0; // accumulated SIMULATED time (sum of the same capped dt used to
+                          // step the physics) — `p` is derived from this, never from raw
+                          // wall-clock elapsed time, so a real stutter (GC pause, a slow
+                          // device, audio buffer generation) can never let `p` race ahead
+                          // of what the physics has actually simulated. Worst case under a
+                          // stall, the roll just takes a bit longer in real time instead of
+                          // desyncing — which is what caused the sporadic late "jump":
+                          // the correction phase compressing a bigger-than-expected gap
+                          // into whatever time `p` claimed was left.
 
   // Each face gets its own inscribed-triangle UV so its dedicated texture renders
   // centered on that face. Winding matches the geometry's outward CCW order
@@ -342,9 +350,9 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     bounceVel.set(Math.cos(launchAngle) * launchSpeed, Math.sin(launchAngle) * launchSpeed);
     lastBounceTime = null;
     prevCorrEased = 0;
+    rollElapsedMs = 0;
 
     rolling = true;
-    rollStart = performance.now();
   }
 
   function animate(now) {
@@ -352,11 +360,10 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     if (!renderer || !dieGroup) return;
 
     if (rolling) {
-      var elapsed = now - rollStart;
-      var p = Math.min(elapsed / ROLL_DURATION, 1);
-
       var dt = lastBounceTime === null ? 0.016 : Math.min((now - lastBounceTime) / 1000, 0.032);
       lastBounceTime = now;
+      rollElapsedMs += dt * 1000;
+      var p = Math.min(rollElapsedMs / ROLL_DURATION, 1);
 
       // --- Position: one continuous spring-in-a-box simulation for the whole roll.
       // Same two forces (inward spring + elastic wall bounce) the entire time; only

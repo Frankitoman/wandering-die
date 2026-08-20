@@ -77,9 +77,6 @@
       btn.addEventListener('click', function () {
         state.answers[state.index] = parseInt(btn.getAttribute('data-option'), 10);
         renderQuestion();
-        if (state.index < QUESTIONS.length - 1) {
-          setTimeout(function () { state.index++; renderQuestion(); }, 220);
-        }
       });
     });
 

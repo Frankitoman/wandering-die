@@ -54,6 +54,7 @@
     els.die = document.getElementById('diceD20');
     els.dieCanvas = document.getElementById('diceD20Canvas');
     els.dieNumber = document.getElementById('diceD20Number');
+    els.rollLabel = document.getElementById('diceRollLabel');
     els.rollBtn = document.getElementById('diceRollBtn');
     els.resultArea = document.getElementById('diceResultArea');
     els.outcome = document.getElementById('diceOutcome');
@@ -107,6 +108,8 @@
     if (!current || els.rollBtn.disabled) return;
     els.rollBtn.disabled = true;
     els.resultArea.hidden = true;
+    els.rollLabel.hidden = true;
+    els.rollLabel.classList.remove('is-nat20', 'is-nat1');
 
     var totalDuration = (threeActive && global.WD3D.ROLL_DURATION) ? global.WD3D.ROLL_DURATION : FALLBACK_ROLL_DURATION;
     var finalRoll = 1 + Math.floor(Math.random() * 20);
@@ -127,6 +130,10 @@
           els.die.classList.add('is-landed');
           setTimeout(function () { els.die.classList.remove('is-landed'); }, 500);
         }
+        els.rollLabel.textContent = finalRoll === 20 ? 'NAT 20' : finalRoll === 1 ? 'NAT 1' : String(finalRoll);
+        els.rollLabel.classList.toggle('is-nat20', finalRoll === 20);
+        els.rollLabel.classList.toggle('is-nat1', finalRoll === 1);
+        els.rollLabel.hidden = false;
         showRollResult(finalRoll);
         els.rollBtn.disabled = false;
         return;

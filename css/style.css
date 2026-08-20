@@ -221,6 +221,18 @@ body::before {
   text-shadow: 0 0 16px var(--glow), 0 2px 10px rgba(0,0,0,0.75);
 }
 
+.dice-roll-label {
+  font-family: var(--font-hero); font-size: 1.7rem; font-weight: 700; letter-spacing: 0.04em;
+  color: var(--silver-bright); text-shadow: 0 0 16px var(--glow), 0 2px 10px rgba(0,0,0,0.75);
+  margin: -14px 0 22px; animation: dice-roll-label-in 0.3s ease;
+}
+.dice-roll-label.is-nat20 { color: #ffd06e; text-shadow: 0 0 18px rgba(255,208,110,0.85), 0 2px 10px rgba(0,0,0,0.75); }
+.dice-roll-label.is-nat1 { color: #ff6a6a; text-shadow: 0 0 18px rgba(255,90,90,0.75), 0 2px 10px rgba(0,0,0,0.75); }
+@keyframes dice-roll-label-in {
+  0% { opacity: 0; transform: translateY(-6px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Fallback flat gem shape, used only when WebGL / the 3D module isn't available */
 .d20.d20--fallback {
   clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
