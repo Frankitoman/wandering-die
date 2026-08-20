@@ -18,72 +18,6 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var pendingResultNumber = 20;
   var flourishTimeout = null;
 
-  // Procedural sound (no audio files): a short filtered noise "clack" on every wall
-  // bounce — the "rattling" BG3 is praised for — plus a landing tone, brighter for a
-  // natural 20 and lower/dissonant for a natural 1. Context is created lazily inside
-  // startRoll (always called from a click handler), which satisfies the browser's
-  // autoplay-needs-a-user-gesture requirement.
-  var audioCtx = null;
-  function ensureAudio() {
-    if (!audioCtx) {
-      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-      catch (e) { audioCtx = null; }
-    }
-    if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
-    return audioCtx;
-  }
-  var lastClackTime = 0;
-  function playClack(intensity) {
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var nowMs = ctx.currentTime * 1000;
-    if (nowMs - lastClackTime < 35) return; // avoid a double-clack when a corner hits both walls in one frame
-    lastClackTime = nowMs;
-    var t0 = ctx.currentTime;
-    var len = Math.floor(ctx.sampleRate * 0.035);
-    var buffer = ctx.createBuffer(1, len, ctx.sampleRate);
-    var data = buffer.getChannelData(0);
-    for (var i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
-    var noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    var filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 1500 + Math.random() * 900;
-    filter.Q.value = 1.1;
-    var gain = ctx.createGain();
-    var peak = Math.min(Math.max(intensity, 0), 1) * 0.3 + 0.04;
-    gain.gain.setValueAtTime(peak, t0);
-    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
-    noise.connect(filter).connect(gain).connect(ctx.destination);
-    noise.start(t0);
-    noise.stop(t0 + 0.06);
-  }
-  function playTone(freq, startOffset, duration, type, peak) {
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var t0 = ctx.currentTime + startOffset;
-    var osc = ctx.createOscillator();
-    osc.type = type;
-    osc.frequency.value = freq;
-    var gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, t0);
-    gain.gain.linearRampToValueAtTime(peak, t0 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(t0);
-    osc.stop(t0 + duration + 0.05);
-  }
-  function playLanding(n) {
-    if (n === 20) {
-      [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { playTone(f, i * 0.07, 0.35, 'triangle', 0.2); });
-    } else if (n === 1) {
-      playTone(110, 0, 0.5, 'sawtooth', 0.16);
-      playTone(103.83, 0.02, 0.5, 'sawtooth', 0.12);
-    } else {
-      playTone(660, 0, 0.28, 'sine', 0.16);
-    }
-  }
-
   // Rotation is ONE unified, continuous process for the entire roll — never a separate
   // "decide the result now" phase, so there's nothing that can read as a late, staged
   // correction. Every frame does two things to the SAME accumulated `rollQuat`:
@@ -136,12 +70,12 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var rollElapsedMs = 0; // accumulated SIMULATED time (sum of the same capped dt used to
                           // step the physics) — `p` is derived from this, never from raw
                           // wall-clock elapsed time, so a real stutter (GC pause, a slow
-                          // device, audio buffer generation) can never let `p` race ahead
-                          // of what the physics has actually simulated. Worst case under a
-                          // stall, the roll just takes a bit longer in real time instead of
-                          // desyncing — which is what caused the sporadic late "jump":
-                          // the correction phase compressing a bigger-than-expected gap
-                          // into whatever time `p` claimed was left.
+                          // device, a busy tab) can never let `p` race ahead of what the
+                          // physics has actually simulated. Worst case under a stall, the
+                          // roll just takes a bit longer in real time instead of desyncing
+                          // — which is what caused the sporadic late "jump": the correction
+                          // phase compressing a bigger-than-expected gap into whatever time
+                          // `p` claimed was left.
 
   // Each face gets its own inscribed-triangle UV so its dedicated texture renders
   // centered on that face. Winding matches the geometry's outward CCW order
@@ -153,18 +87,32 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   // confident, energetic middle section — smoother than a plain ease-out.
   function rollEase(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
 
-  // Decomposes the rotation from `from` to `to` into a single axis + shortest angle,
-  // so the whole roll can spin around ONE fixed axis and land exactly on target
-  // (adding whole 2*PI turns to that angle never changes where it ends up).
-  function computeSpinPlan(from, to) {
-    var delta = to.clone().multiply(from.clone().invert());
+  // Scratch objects reused every frame instead of `new`-ing fresh Vector3/Quaternion
+  // instances 60 times a second during a roll — keeps the animation loop allocation-free
+  // so it can't itself be a source of GC-pause hiccups.
+  var scratchInvQuat = new THREE.Quaternion();
+  var scratchDeltaQuat = new THREE.Quaternion();
+  var scratchRollAxis = new THREE.Vector3();
+  var scratchRotQuat = new THREE.Quaternion();
+  var scratchPlanAxis = new THREE.Vector3();
+
+  // Decomposes the rotation from `from` to `to` into a single axis + shortest angle, so
+  // the whole roll can spin around ONE axis and land exactly on target (adding whole
+  // 2*PI turns to that angle never changes where it ends up). Writes the axis into
+  // `outAxis` and returns the angle, instead of allocating a fresh result each call.
+  function computeSpinPlan(from, to, outAxis) {
+    scratchInvQuat.copy(from).invert();
+    scratchDeltaQuat.copy(to).multiply(scratchInvQuat);
+    var delta = scratchDeltaQuat;
     if (delta.w < 0) { delta.x *= -1; delta.y *= -1; delta.z *= -1; delta.w *= -1; }
     var w = THREE.MathUtils.clamp(delta.w, -1, 1);
     var s = Math.sqrt(1 - w * w);
     if (s < 1e-6) {
-      return { axis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(), angle: 0 };
+      outAxis.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+      return 0;
     }
-    return { axis: new THREE.Vector3(delta.x / s, delta.y / s, delta.z / s), angle: 2 * Math.acos(w) };
+    outAxis.set(delta.x / s, delta.y / s, delta.z / s);
+    return 2 * Math.acos(w);
   }
 
   function configureTexture(tex, maxAniso) {
@@ -337,8 +285,6 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
     rollQuat.copy(dieGroup.quaternion);
 
-    ensureAudio(); // create/unlock the audio context inside this click-driven call
-
     if (dieContainer) {
       dieContainer.classList.remove('is-nat20', 'is-nat1');
       if (flourishTimeout) { clearTimeout(flourishTimeout); flourishTimeout = null; }
@@ -382,12 +328,10 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
       bounceVel.y *= dampFactor;
       bouncePos.x += bounceVel.x * dt;
       bouncePos.y += bounceVel.y * dt;
-      var hitSpeed = 0;
-      if (bouncePos.x > BOUNCE_BOUND) { hitSpeed = Math.max(hitSpeed, Math.abs(bounceVel.x)); bouncePos.x = BOUNCE_BOUND; bounceVel.x = -Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
-      else if (bouncePos.x < -BOUNCE_BOUND) { hitSpeed = Math.max(hitSpeed, Math.abs(bounceVel.x)); bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
-      if (bouncePos.y > BOUNCE_BOUND) { hitSpeed = Math.max(hitSpeed, Math.abs(bounceVel.y)); bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
-      else if (bouncePos.y < -BOUNCE_BOUND) { hitSpeed = Math.max(hitSpeed, Math.abs(bounceVel.y)); bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
-      if (hitSpeed > 0) { playClack(hitSpeed / 4); }
+      if (bouncePos.x > BOUNCE_BOUND) { bouncePos.x = BOUNCE_BOUND; bounceVel.x = -Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
+      else if (bouncePos.x < -BOUNCE_BOUND) { bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
+      if (bouncePos.y > BOUNCE_BOUND) { bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
+      else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
       dieGroup.position.x = bouncePos.x;
       dieGroup.position.y = bouncePos.y;
 
@@ -396,9 +340,10 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
       if (speed > 1e-4) {
         var physFade = p < PHYS_FADE_START ? 1 : (p > PHYS_FADE_END ? 0 : rollEase(1 - (p - PHYS_FADE_START) / (PHYS_FADE_END - PHYS_FADE_START)));
         if (physFade > 0) {
-          var rollAxis = new THREE.Vector3(-bounceVel.y, bounceVel.x, 0).normalize();
+          scratchRollAxis.set(-bounceVel.y, bounceVel.x, 0).normalize();
           var dAngle = (speed * dt / ROLL_RADIUS) * SPIN_ENERGY * physFade;
-          rollQuat.premultiply(new THREE.Quaternion().setFromAxisAngle(rollAxis, dAngle));
+          scratchRotQuat.setFromAxisAngle(scratchRollAxis, dAngle);
+          rollQuat.premultiply(scratchRotQuat);
         }
       }
       // Gap-closing pull: only switches on once physics has fully settled (so the two
@@ -415,9 +360,10 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
         stepFrac = Math.min(Math.max(stepFrac, 0), 1);
         prevCorrEased = eased;
         if (stepFrac > 0) {
-          var plan = computeSpinPlan(rollQuat, rollTargetQuat);
-          if (plan.angle > 1e-6) {
-            rollQuat.premultiply(new THREE.Quaternion().setFromAxisAngle(plan.axis, plan.angle * stepFrac));
+          var planAngle = computeSpinPlan(rollQuat, rollTargetQuat, scratchPlanAxis);
+          if (planAngle > 1e-6) {
+            scratchRotQuat.setFromAxisAngle(scratchPlanAxis, planAngle * stepFrac);
+            rollQuat.premultiply(scratchRotQuat);
           }
         }
       }
@@ -430,7 +376,6 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
         dieGroup.position.x = 0;
         dieGroup.position.y = 0;
 
-        playLanding(pendingResultNumber);
         if (dieContainer && (pendingResultNumber === 20 || pendingResultNumber === 1)) {
           var flourishClass = pendingResultNumber === 20 ? 'is-nat20' : 'is-nat1';
           dieContainer.classList.add(flourishClass);
