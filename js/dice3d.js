@@ -6,9 +6,9 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
   var SIZE = 340; // internal render resolution; CSS scales the box responsively without
                    // touching this, so the bounce frame's proportions stay identical everywhere
-  var CAMERA_DISTANCE = 11.2; // pulled back so the (now even larger) bounce frame still
-                               // fits entirely inside the visible frustum with margin to spare
-  var RADIUS = 1.0; // kept safely inside the camera's visible frustum so vertices never clip the frame
+  var CAMERA_DISTANCE = 12.3; // pulled back so the (bigger die, bigger frame) still fits
+                               // entirely inside the visible frustum with margin to spare
+  var RADIUS = 1.5; // bigger physical die; camera distance above keeps it safely clear of clipping
   var ROLL_DURATION = 2800;
 
   var renderer, scene, camera, dieGroup;
@@ -45,13 +45,26 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
                           // but with a proper zero-derivative-at-both-ends deceleration
                           // instead of a constant-speed cruise + sudden stop)
 
-  var BOUNCE_BOUND = 1.3; // world-space half-extent of the bounce frame — enlarged so the
-                           // die can roam much more freely before homing back to center
-  var BOUNCE_PHASE_END = 0.55; // fraction of ROLL_DURATION spent actively bouncing (position only)
+  // Position is likewise ONE continuous physical simulation for the entire roll, never a
+  // mode switch. The die is a particle bouncing elastically off the walls of the frame,
+  // always pulled toward the center by a spring — the SAME two forces (spring + bounce)
+  // act from the very first frame to the last. What changes smoothly over time is only
+  // how strong the spring/damping are: weak and underdamped at first (so the launch
+  // energy plays out as real, energetic bouncing), ramping to a much stiffer, near-
+  // critically-damped spring for the back stretch (so it settles at dead center quickly
+  // and cleanly). Because the whole roll is decided by a single launch angle + speed
+  // chosen the instant the button is clicked, "where it'll end up" is baked in from the
+  // very first frame — nothing about the trajectory's rules ever changes mid-flight.
+  var BOUNCE_BOUND = 1.3; // world-space half-extent of the frame the die can roam within
+  var SPRING_K_WEAK = 0.4; // gentle pull early on — barely affects the free-flying bounce
+  var SPRING_K_STRONG = 70; // stiff pull for the settle — fast, clean convergence to center
+  var DAMP_WEAK = 0.05; // near-undamped early on, so launch energy plays out as real bounces
+  var DAMP_STRONG = 1.25; // slightly-over-critical damping for the settle — no overshoot/wobble
+  var SPRING_RAMP_START = 0.5; // fraction of the roll where the settle-in begins ramping up
+  var SPRING_RAMP_END = 0.75; // ...fully ramped by here, leaving a long, clean settle tail
+  var BOUNCE_RESTITUTION = 0.92; // slight energy loss per wall hit, like a real bounce
   var bouncePos = new THREE.Vector2(0, 0);
   var bounceVel = new THREE.Vector2(0, 0);
-  var homingStartPos = new THREE.Vector2(0, 0);
-  var homingStarted = false;
   var lastBounceTime = null;
 
   // Each face gets its own inscribed-triangle UV so its dedicated texture renders
@@ -250,7 +263,6 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     var launchSpeed = 3.2 + Math.random() * 1.3;
     bouncePos.set(0, 0);
     bounceVel.set(Math.cos(launchAngle) * launchSpeed, Math.sin(launchAngle) * launchSpeed);
-    homingStarted = false;
     lastBounceTime = null;
     prevCorrEased = 0;
 
@@ -269,20 +281,27 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
       var dt = lastBounceTime === null ? 0.016 : Math.min((now - lastBounceTime) / 1000, 0.032);
       lastBounceTime = now;
 
-      // --- Position: bounces freely around the frame, then eases back to dead center ---
-      if (p < BOUNCE_PHASE_END) {
-        bouncePos.x += bounceVel.x * dt;
-        bouncePos.y += bounceVel.y * dt;
-        if (bouncePos.x > BOUNCE_BOUND) { bouncePos.x = BOUNCE_BOUND; bounceVel.x = -Math.abs(bounceVel.x); bounceVel.y += (Math.random() - 0.5) * 0.9; }
-        else if (bouncePos.x < -BOUNCE_BOUND) { bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x); bounceVel.y += (Math.random() - 0.5) * 0.9; }
-        if (bouncePos.y > BOUNCE_BOUND) { bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
-        else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
-      } else {
-        if (!homingStarted) { homingStarted = true; homingStartPos.copy(bouncePos); }
-        var posEase = rollEase((p - BOUNCE_PHASE_END) / (1 - BOUNCE_PHASE_END));
-        bouncePos.x = homingStartPos.x * (1 - posEase);
-        bouncePos.y = homingStartPos.y * (1 - posEase);
-      }
+      // --- Position: one continuous spring-in-a-box simulation for the whole roll.
+      // Same two forces (inward spring + elastic wall bounce) the entire time; only
+      // their strength ramps smoothly from "barely there" (real, chaotic bouncing) to
+      // "fast and clean" (settles exactly at center) — never a mode switch.
+      var springLocalP = Math.min(Math.max((p - SPRING_RAMP_START) / (SPRING_RAMP_END - SPRING_RAMP_START), 0), 1);
+      var springEase = rollEase(springLocalP);
+      var springK = SPRING_K_WEAK + (SPRING_K_STRONG - SPRING_K_WEAK) * springEase;
+      var dampMult = DAMP_WEAK + (DAMP_STRONG - DAMP_WEAK) * springEase;
+      var dampPerSec = Math.exp(-2 * Math.sqrt(springK) * dampMult);
+
+      bounceVel.x += -springK * bouncePos.x * dt;
+      bounceVel.y += -springK * bouncePos.y * dt;
+      var dampFactor = Math.pow(dampPerSec, dt);
+      bounceVel.x *= dampFactor;
+      bounceVel.y *= dampFactor;
+      bouncePos.x += bounceVel.x * dt;
+      bouncePos.y += bounceVel.y * dt;
+      if (bouncePos.x > BOUNCE_BOUND) { bouncePos.x = BOUNCE_BOUND; bounceVel.x = -Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
+      else if (bouncePos.x < -BOUNCE_BOUND) { bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
+      if (bouncePos.y > BOUNCE_BOUND) { bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
+      else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
       dieGroup.position.x = bouncePos.x;
       dieGroup.position.y = bouncePos.y;
 
