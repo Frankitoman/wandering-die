@@ -18,12 +18,12 @@
   </g>
   <text x="400" y="270" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="58" fill="#f1f2f7" letter-spacing="2">THE WANDERING DIE</text>
   <text x="400" y="308" text-anchor="middle" font-family="Georgia, serif" font-size="18" letter-spacing="5" fill="#b79bff">FIND YOUR D&amp;D CLASS · ROLL YOUR FATE</text>
-  <g transform="translate(240,350)" opacity="0.9" stroke="#c7cbd8" stroke-width="1.6" fill="none">
-    <polygon points="60,0 120,20 120,60 60,80 0,60 0,20"/>
-    <text x="60" y="48" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#f1f2f7" stroke="none">20</text>
+  <g transform="translate(265.4,350)" opacity="0.9" stroke="#c7cbd8" stroke-width="1.6" fill="none">
+    <polygon points="34.6,0 69.3,20 69.3,60 34.6,80 0,60 0,20"/>
+    <text x="34.6" y="48" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#f1f2f7" stroke="none">20</text>
   </g>
-  <g transform="translate(500,350)" opacity="0.55" stroke="#8c6fe0" stroke-width="1.6" fill="none">
-    <polygon points="60,0 120,20 120,60 60,80 0,60 0,20"/>
-    <text x="60" y="48" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#c7cbd8" stroke="none">1</text>
+  <g transform="translate(525.4,350)" opacity="0.55" stroke="#8c6fe0" stroke-width="1.6" fill="none">
+    <polygon points="34.6,0 69.3,20 69.3,60 34.6,80 0,60 0,20"/>
+    <text x="34.6" y="48" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#c7cbd8" stroke="none">1</text>
   </g>
 </svg>
