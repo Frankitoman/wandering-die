@@ -191,7 +191,7 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     renderer.setSize(SIZE, SIZE, false);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(32, 1, 0.1, 10);
+    camera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
     camera.position.set(0, 0, CAMERA_DISTANCE);
 
     scene.add(new THREE.AmbientLight(0x2a2140, 1.15));
