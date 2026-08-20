@@ -17,27 +17,26 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
   var rollStart = 0;
   var rollTargetQuat = new THREE.Quaternion();
 
-  // Bounce-in-a-box: the die (always at full, constant size) carries real velocity
-  // and reflects off an invisible frame around the visible canvas, then homes back
-  // to dead center for the reveal. While bouncing, the spin axis is derived from the
-  // CURRENT velocity direction each frame (like a ball rolling across a table), so
-  // the instant a wall flips the velocity, the spin direction visibly flips with it —
-  // a real billiard-cushion feel, not a spin that merely happens to coincide with hits.
-  // Only the final homing-phase corrective spin (computed once, from wherever the
-  // rolling motion left off) guarantees the exact target face — nothing here can
-  // change which number is about to land, that's fixed the moment startRoll runs.
+  // Rotation is ONE continuous formula for the entire roll (recomputed fresh from
+  // progress `p` every frame, never accumulated) — the same technique proven to land
+  // exactly on target with zero jerk. Computed once in startRoll from the die's
+  // current orientation, so it can't be redirected mid-roll by anything below.
+  var baseAxis = new THREE.Vector3(0, 1, 0);
+  var baseStartQuat = new THREE.Quaternion();
+  var baseTotalAngle = 0;
+
+  // Billiard wobble: a small INSTANTANEOUS tilt (never accumulated) layered on top of
+  // the base spin, recomputed fresh each frame from the current bounce velocity — its
+  // axis flips the instant a wall reflects the velocity, and its whole contribution is
+  // scaled by an envelope that is exactly 0 at p=1, so it can never affect the final,
+  // already-decided orientation, only how the tumble looks along the way.
   var BOUNCE_BOUND = 0.68;
   var BOUNCE_PHASE_END = 0.68; // fraction of ROLL_DURATION spent bouncing before homing in
-  var SPIN_DECAY_START = 0.5; // fraction of the bounce phase where angular speed starts easing to 0
-  var ROLL_RADIUS = 0.4; // smaller = faster apparent spin per unit of travel speed
   var bouncePos = new THREE.Vector2(0, 0);
   var bounceVel = new THREE.Vector2(0, 0);
   var homingStartPos = new THREE.Vector2(0, 0);
   var homingStarted = false;
   var lastBounceTime = null;
-  var homingRollAxis = new THREE.Vector3(0, 1, 0);
-  var homingRollStartQuat = new THREE.Quaternion();
-  var homingTotalAngle = 0;
 
   // Each face gets its own inscribed-triangle UV so its dedicated texture renders
   // centered on that face. Winding matches the geometry's outward CCW order
@@ -229,6 +228,12 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     var faceIndex = Math.max(1, Math.min(20, resultNumber || 20)) - 1;
     rollTargetQuat.copy(computeFaceQuaternion(faceIndex));
 
+    baseStartQuat.copy(dieGroup.quaternion);
+    var plan = computeSpinPlan(baseStartQuat, rollTargetQuat);
+    var extraSpins = 3 + Math.floor(Math.random() * 4); // 3-6 full turns across the whole roll
+    baseAxis.copy(plan.axis);
+    baseTotalAngle = plan.angle + Math.PI * 2 * extraSpins;
+
     var launchAngle = Math.random() * Math.PI * 2;
     var launchSpeed = 1.7 + Math.random() * 0.7;
     bouncePos.set(0, 0);
@@ -251,6 +256,7 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
       var dt = lastBounceTime === null ? 0.016 : Math.min((now - lastBounceTime) / 1000, 0.032);
       lastBounceTime = now;
 
+      // --- Position: bounces around the frame, then eases back to dead center ---
       if (p < BOUNCE_PHASE_END) {
         bouncePos.x += bounceVel.x * dt;
         bouncePos.y += bounceVel.y * dt;
@@ -258,39 +264,35 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
         else if (bouncePos.x < -BOUNCE_BOUND) { bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x); bounceVel.y += (Math.random() - 0.5) * 0.9; }
         if (bouncePos.y > BOUNCE_BOUND) { bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
         else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y); bounceVel.x += (Math.random() - 0.5) * 0.9; }
-
-        // Roll in the direction of current travel — axis is perpendicular to
-        // velocity, so it flips the instant a wall reflects the velocity. Speed
-        // eases down to exactly 0 over the back half of the bounce phase, so by
-        // the time homing takes over there is zero leftover angular velocity —
-        // no jerk, no "sudden extra spin" grafted onto the end.
-        var speed = bounceVel.length();
-        var bounceProgress = p / BOUNCE_PHASE_END;
-        var spinDecay = bounceProgress < SPIN_DECAY_START ? 1 : 1 - rollEase((bounceProgress - SPIN_DECAY_START) / (1 - SPIN_DECAY_START));
-        if (speed > 1e-4 && spinDecay > 0) {
-          var rollAxisVec = new THREE.Vector3(-bounceVel.y, bounceVel.x, 0).normalize();
-          var deltaQ = new THREE.Quaternion().setFromAxisAngle(rollAxisVec, (speed / ROLL_RADIUS) * spinDecay * dt);
-          dieGroup.quaternion.premultiply(deltaQ);
-        }
       } else {
-        if (!homingStarted) {
-          homingStarted = true;
-          homingStartPos.copy(bouncePos);
-          homingRollStartQuat.copy(dieGroup.quaternion);
-          var plan = computeSpinPlan(homingRollStartQuat, rollTargetQuat);
-          homingRollAxis.copy(plan.axis);
-          homingTotalAngle = plan.angle + Math.PI * 2; // exactly one settling turn, never more
-        }
+        if (!homingStarted) { homingStarted = true; homingStartPos.copy(bouncePos); }
         var homingEase = rollEase((p - BOUNCE_PHASE_END) / (1 - BOUNCE_PHASE_END));
         bouncePos.x = homingStartPos.x * (1 - homingEase);
         bouncePos.y = homingStartPos.y * (1 - homingEase);
-
-        var rot = new THREE.Quaternion().setFromAxisAngle(homingRollAxis, homingTotalAngle * homingEase);
-        dieGroup.quaternion.multiplyQuaternions(rot, homingRollStartQuat);
       }
-
       dieGroup.position.x = bouncePos.x;
       dieGroup.position.y = bouncePos.y;
+
+      // --- Rotation: one guaranteed continuous spin for the whole roll, recomputed
+      // fresh from `p` every frame (never accumulated) — this alone decides where the
+      // die ends up, and it is smooth and jerk-free by construction from start to p=1.
+      var eased = rollEase(p);
+      var baseRot = new THREE.Quaternion().setFromAxisAngle(baseAxis, baseTotalAngle * eased);
+      var baseQuat = new THREE.Quaternion().multiplyQuaternions(baseRot, baseStartQuat);
+
+      // Billiard tilt: an instantaneous (non-accumulated) lean derived from the
+      // CURRENT bounce velocity, layered on top. Its envelope is exactly 0 at p=1,
+      // so however it looks mid-roll, it can never move the final landing.
+      var envelope = 1 - eased;
+      if (envelope > 0) {
+        var speed = bounceVel.length();
+        var wobbleAxisVec = speed > 1e-4 ? new THREE.Vector3(-bounceVel.y, bounceVel.x, 0).normalize() : baseAxis;
+        var wobbleAngle = Math.min(speed * 0.35, 1.1) * envelope;
+        var wobbleQ = new THREE.Quaternion().setFromAxisAngle(wobbleAxisVec, wobbleAngle);
+        dieGroup.quaternion.multiplyQuaternions(wobbleQ, baseQuat);
+      } else {
+        dieGroup.quaternion.copy(baseQuat);
+      }
 
       if (p >= 1) {
         rolling = false;
