@@ -4,116 +4,116 @@
 
   var QUIZ_QUESTIONS = [
     {
-      i18n: { en: 'Your party hits a locked door. What do you do?', es: 'Tu grupo se topa con una puerta cerrada. ¿Qué hacés?', da: 'Din gruppe støder på en låst dør. Hvad gør du?' },
+      i18n: { en: "Something important in your life just got complicated. What's your first move?", es: 'Se te complica algo importante en tu vida. ¿Cuál es tu primer movimiento?', da: 'Noget vigtigt i dit liv er lige blevet kompliceret. Hvad er dit første træk?' },
       options: [
-        { classes: ['barbarian', 'fighter'], i18n: { en: 'Break it down with brute strength', es: 'La derribo a la fuerza', da: 'Slår den ned med ren styrke' } },
-        { classes: ['rogue'], i18n: { en: 'Pick the lock without a sound', es: 'Fuerzo la cerradura sin hacer ruido', da: 'Dirker låsen op uden en lyd' } },
-        { classes: ['bard'], i18n: { en: 'Talk my way past whoever guards it', es: 'Convenzo a quien la esté custodiando', da: 'Snakker mig forbi den, der vogter den' } },
-        { classes: ['wizard', 'sorcerer'], i18n: { en: 'Unlock it with a spell', es: 'La abro con un hechizo', da: 'Åbner den med en besværgelse' } },
-        { classes: ['druid', 'ranger'], i18n: { en: 'Find another way in through nature', es: 'Busco otra entrada por la naturaleza', da: 'Finder en anden vej ind gennem naturen' } },
-        { classes: ['cleric', 'paladin'], i18n: { en: 'Ask for guidance and trust the answer', es: 'Pido guía y confío en la respuesta', da: 'Beder om vejledning og stoler på svaret' } }
+        { classes: ['barbarian', 'fighter'], i18n: { en: 'Push through it head-on, no matter how hard it gets', es: 'Lo encaro de frente, por más difícil que se ponga', da: 'Går lige på og hårdt, uanset hvor svært det bliver' } },
+        { classes: ['rogue'], i18n: { en: 'Find a quiet, clever workaround nobody else thought of', es: 'Busco una solución astuta que nadie más pensó', da: 'Finder en snedig genvej, ingen andre tænkte på' } },
+        { classes: ['bard'], i18n: { en: 'Talk to the right person and get them on my side', es: 'Hablo con la persona indicada y la sumo a mi lado', da: 'Snakker med den rette person og får dem med mig' } },
+        { classes: ['wizard', 'sorcerer'], i18n: { en: 'Research it properly until I find the smart fix', es: 'Lo investigo a fondo hasta encontrar la solución inteligente', da: 'Undersøger det grundigt, til jeg finder den smarte løsning' } },
+        { classes: ['druid', 'ranger'], i18n: { en: 'Step away, get some air, and let a different path appear', es: 'Me alejo, tomo aire y dejo que aparezca otro camino', da: 'Tager en pause, trækker vejret, og lader en anden vej dukke op' } },
+        { classes: ['cleric', 'paladin'], i18n: { en: 'Ask someone I trust for advice and follow it', es: 'Le pido consejo a alguien de confianza y lo sigo', da: 'Beder en, jeg stoler på, om råd og følger det' } }
       ]
     },
     {
-      i18n: { en: 'Pick your role once combat breaks out.', es: 'Elegí tu rol cuando estalla el combate.', da: 'Vælg din rolle, når kampen bryder ud.' },
+      i18n: { en: 'In your friend group, what role do you naturally end up playing?', es: 'En tu grupo de amigos, ¿qué rol terminás cumpliendo naturalmente?', da: 'I din vennegruppe, hvilken rolle ender du naturligt med at spille?' },
       options: [
-        { classes: ['fighter', 'paladin', 'barbarian'], i18n: { en: 'Front line, taking every hit', es: 'Primera línea, aguantando todos los golpes', da: 'Forreste linje, tager alle slagene' } },
-        { classes: ['ranger', 'sorcerer', 'wizard'], i18n: { en: 'Ranged damage from a safe distance', es: 'Daño a distancia, desde lejos y a salvo', da: 'Skade på afstand, sikkert fra bagved' } },
-        { classes: ['rogue', 'monk'], i18n: { en: 'Slip in close for a decisive strike', es: 'Me acerco sigilosamente para un golpe decisivo', da: 'Snig mig ind til et afgørende slag' } },
-        { classes: ['cleric', 'bard'], i18n: { en: 'Keep everyone else alive', es: 'Mantengo con vida a todos los demás', da: 'Holder alle andre i live' } },
-        { classes: ['wizard', 'druid', 'warlock'], i18n: { en: 'Control the field with spells and summons', es: 'Controlo el campo con hechizos e invocaciones', da: 'Kontrollerer slagmarken med besværgelser og påkaldelser' } }
+        { classes: ['fighter', 'paladin', 'barbarian'], i18n: { en: "The one who steps up first when there's a problem", es: 'El/la que se pone al frente apenas hay un problema', da: 'Den, der træder til først, når der er et problem' } },
+        { classes: ['ranger', 'sorcerer', 'wizard'], i18n: { en: 'The one who watches from a bit of a distance and gives sharp opinions', es: 'El/la que observa un poco desde afuera y opina con precisión', da: 'Den, der iagttager lidt på afstand og kommer med skarpe meninger' } },
+        { classes: ['rogue', 'monk'], i18n: { en: 'The one who fixes it fast, quietly, and moves on', es: 'El/la que lo soluciona rápido, en silencio, y sigue de largo', da: 'Den, der ordner det hurtigt og stille og går videre' } },
+        { classes: ['cleric', 'bard'], i18n: { en: "The one making sure everyone's actually having a good time", es: 'El/la que se asegura de que todos la estén pasando bien de verdad', da: 'Den, der sørger for, at alle rent faktisk har det sjovt' } },
+        { classes: ['wizard', 'druid', 'warlock'], i18n: { en: 'The one quietly organizing the plan behind the scenes', es: 'El/la que organiza el plan en silencio, detrás de escena', da: 'Den, der stille organiserer planen bag kulisserne' } }
       ]
     },
     {
-      i18n: { en: 'Where do you feel most at home?', es: '¿Dónde te sentís más en tu ambiente?', da: 'Hvor føler du dig mest hjemme?' },
+      i18n: { en: 'Where do you feel most like yourself?', es: '¿Dónde te sentís más vos mismo/a?', da: 'Hvor føler du dig mest som dig selv?' },
       options: [
-        { classes: ['fighter', 'barbarian'], i18n: { en: 'A war camp before the dawn', es: 'Un campamento de guerra antes del amanecer', da: 'En krigslejr før daggry' } },
-        { classes: ['wizard'], i18n: { en: 'An ancient, dust-filled library', es: 'Una biblioteca antigua llena de polvo', da: 'Et gammelt, støvfyldt bibliotek' } },
-        { classes: ['cleric', 'paladin'], i18n: { en: 'A quiet temple at dusk', es: 'Un templo silencioso al atardecer', da: 'Et stille tempel ved solnedgang' } },
-        { classes: ['druid', 'ranger'], i18n: { en: 'Deep in an untouched forest', es: 'En lo profundo de un bosque virgen', da: 'Dybt i en urørt skov' } },
-        { classes: ['bard', 'rogue'], i18n: { en: 'A crowded tavern in the city streets', es: 'Una taberna abarrotada en las calles de la ciudad', da: 'En overfyldt kro i byens gader' } },
-        { classes: ['warlock'], i18n: { en: 'Somewhere the shadows feel like company', es: 'En algún lugar donde las sombras hacen compañía', da: 'Et sted hvor skyggerne føles som selskab' } },
-        { classes: ['monk'], i18n: { en: 'A silent monastery on a mountain', es: 'Un monasterio silencioso en la montaña', da: 'Et stille kloster på et bjerg' } }
+        { classes: ['fighter', 'barbarian'], i18n: { en: 'At the gym or training, early, before anyone else shows up', es: 'En el gimnasio o entrenando, temprano, antes de que llegue nadie', da: 'I fitnesscentret eller til træning, tidligt, før andre dukker op' } },
+        { classes: ['wizard'], i18n: { en: 'Surrounded by books, notes, and something to figure out', es: 'Rodeado/a de libros, apuntes y algo para descifrar', da: 'Omgivet af bøger, noter og noget at finde ud af' } },
+        { classes: ['cleric', 'paladin'], i18n: { en: 'Somewhere quiet where I can just breathe and think', es: 'En algún lugar tranquilo donde pueda respirar y pensar', da: 'Et stille sted, hvor jeg bare kan trække vejret og tænke' } },
+        { classes: ['druid', 'ranger'], i18n: { en: 'Outdoors, away from screens and noise', es: 'Al aire libre, lejos de las pantallas y el ruido', da: 'Udendørs, væk fra skærme og støj' } },
+        { classes: ['bard', 'rogue'], i18n: { en: 'A bar full of people, music, and conversation', es: 'Un bar lleno de gente, música y charla', da: 'En bar fuld af mennesker, musik og snak' } },
+        { classes: ['warlock'], i18n: { en: 'Alone at night with my own thoughts', es: 'Solo/a de noche, con mis propios pensamientos', da: 'Alene om natten med mine egne tanker' } },
+        { classes: ['monk'], i18n: { en: 'In the middle of a routine — running, training, anything repetitive', es: 'En medio de una rutina: corriendo, entrenando, algo repetitivo', da: 'Midt i en rutine — løb, træning, noget gentagende' } }
       ]
     },
     {
-      i18n: { en: "What's the story that drives you forward?", es: '¿Qué historia te impulsa a seguir adelante?', da: 'Hvilken historie driver dig fremad?' },
+      i18n: { en: 'What actually gets you out of bed every day?', es: '¿Qué es lo que realmente te hace levantarte todos los días?', da: 'Hvad får dig egentlig op af sengen hver dag?' },
       options: [
-        { classes: ['paladin', 'cleric', 'fighter'], i18n: { en: 'I protect the people who can\'t protect themselves', es: 'Protejo a quienes no pueden protegerse solos', da: 'Jeg beskytter dem, der ikke kan beskytte sig selv' } },
-        { classes: ['barbarian', 'ranger', 'sorcerer'], i18n: { en: 'I answer to no one but myself', es: 'No le respondo a nadie más que a mí mismo/a', da: 'Jeg svarer kun til mig selv' } },
-        { classes: ['wizard', 'monk'], i18n: { en: 'I chase mastery, one truth at a time', es: 'Persigo la maestría, una verdad a la vez', da: 'Jeg jagter mesterskab, én sandhed ad gangen' } },
-        { classes: ['bard', 'rogue'], i18n: { en: 'I want a story worth telling', es: 'Quiero una historia que valga la pena contar', da: 'Jeg vil have en historie, det er værd at fortælle' } },
-        { classes: ['warlock', 'sorcerer'], i18n: { en: 'Power, whatever it costs me', es: 'Poder, cueste lo que cueste', da: 'Magt, uanset hvad det koster mig' } },
-        { classes: ['druid'], i18n: { en: 'Balance, even if the world resists it', es: 'Equilibrio, aunque el mundo se resista', da: 'Balance, selv hvis verden gør modstand' } }
+        { classes: ['paladin', 'cleric', 'fighter'], i18n: { en: 'Taking care of the people I love', es: 'Cuidar a la gente que quiero', da: 'At tage mig af dem, jeg elsker' } },
+        { classes: ['barbarian', 'ranger', 'sorcerer'], i18n: { en: 'Not answering to anyone but myself', es: 'No responderle a nadie más que a mí mismo/a', da: 'Ikke at skulle stå til regnskab for andre end mig selv' } },
+        { classes: ['wizard', 'monk'], i18n: { en: 'Getting a little better or a little smarter than yesterday', es: 'Ser un poco mejor o un poco más sabio/a que ayer', da: 'At blive lidt bedre eller klogere end i går' } },
+        { classes: ['bard', 'rogue'], i18n: { en: 'Living stuff worth telling people about later', es: 'Vivir cosas que después valga la pena contar', da: 'At opleve ting, det er værd at fortælle om bagefter' } },
+        { classes: ['warlock', 'sorcerer'], i18n: { en: 'Getting where I want to go, whatever it takes', es: 'Llegar a donde quiero llegar, cueste lo que cueste', da: 'At nå derhen, jeg vil hen, uanset hvad det kræver' } },
+        { classes: ['druid'], i18n: { en: 'Keeping some kind of balance in a chaotic life', es: 'Mantener algo de equilibrio en una vida caótica', da: 'At holde en form for balance i et kaotisk liv' } }
       ]
     },
     {
-      i18n: { en: 'Choose the weapon that feels like an extension of you.', es: 'Elegí el arma que sentís como una extensión tuya.', da: 'Vælg det våben, der føles som en forlængelse af dig.' },
+      i18n: { en: "You're starving and can order literally anything. What are you getting?", es: 'Tenés un hambre feroz y podés pedir lo que quieras. ¿Qué pedís?', da: 'Du er skrupsulten og kan bestille hvad som helst. Hvad bestiller du?' },
       options: [
-        { classes: ['barbarian', 'fighter'], i18n: { en: 'A heavy greatsword or axe', es: 'Una espadona o hacha pesada', da: 'Et tungt sværd eller en økse' } },
-        { classes: ['ranger'], i18n: { en: 'A longbow', es: 'Un arco largo', da: 'En langbue' } },
-        { classes: ['rogue', 'monk'], i18n: { en: 'A pair of daggers, or just my fists', es: 'Un par de dagas, o directamente mis puños', da: 'Et par dolke, eller bare mine næver' } },
-        { classes: ['wizard', 'sorcerer'], i18n: { en: 'A staff or wand humming with power', es: 'Un bastón o vara que zumba con poder', da: 'En stav eller tryllestav, der summer af kraft' } },
-        { classes: ['cleric', 'paladin'], i18n: { en: 'A holy symbol and a sturdy mace', es: 'Un símbolo sagrado y una maza resistente', da: 'Et helligt symbol og en solid stridskølle' } },
-        { classes: ['bard'], i18n: { en: 'An instrument that doubles as a weapon of the mind', es: 'Un instrumento que también es un arma de la mente', da: 'Et instrument der også er et sindets våben' } },
-        { classes: ['warlock'], i18n: { en: 'A pact weapon I barely understand', es: 'Un arma de pacto que apenas comprendo', da: 'Et pagtvåben jeg knap forstår' } }
+        { classes: ['barbarian', 'fighter'], i18n: { en: 'A massive, heavy plate — the biggest thing on the menu', es: 'Un plato enorme y contundente, lo más grande del menú', da: 'En kæmpe, tung tallerken — den største ting på menuen' } },
+        { classes: ['ranger'], i18n: { en: 'Something simple and practical I can eat on the go', es: 'Algo simple y práctico que pueda comer mientras camino', da: 'Noget simpelt og praktisk, jeg kan spise på farten' } },
+        { classes: ['rogue', 'monk'], i18n: { en: 'Good street food, fast and no fuss', es: 'Buena comida callejera, rápida y sin vueltas', da: 'Godt gadekøkken, hurtigt og uden ceremoni' } },
+        { classes: ['wizard', 'sorcerer'], i18n: { en: "Something elaborate I've never tried before", es: 'Algo elaborado que nunca probé antes', da: 'Noget indviklet, jeg aldrig har prøvet før' } },
+        { classes: ['cleric', 'paladin'], i18n: { en: 'Homemade food, like the kind my family makes', es: 'Comida casera, como la que hace mi familia', da: 'Hjemmelavet mad, ligesom den min familie laver' } },
+        { classes: ['bard'], i18n: { en: 'A big spread to share at a long table with friends', es: 'Una mesa larga llena de platos para compartir con amigos', da: 'Et stort bord fyldt med retter at dele med venner' } },
+        { classes: ['warlock'], i18n: { en: 'Some weird combination nobody else would order', es: 'Una combinación rara que nadie más pediría', da: 'En mærkelig kombination, ingen andre ville bestille' } }
       ]
     },
     {
-      i18n: { en: 'How does magic move through you, if at all?', es: '¿Cómo fluye la magia en vos, si es que lo hace?', da: 'Hvordan bevæger magi sig igennem dig, hvis overhovedet?' },
+      i18n: { en: "Where do you think your biggest strength actually comes from?", es: '¿De dónde creés que viene tu mayor fortaleza?', da: 'Hvor tror du, din største styrke egentlig kommer fra?' },
       options: [
-        { classes: ['fighter', 'barbarian', 'rogue', 'ranger'], i18n: { en: "It doesn't — my skill is physical, earned through practice", es: 'No fluye: mi habilidad es física, ganada con práctica', da: 'Det gør den ikke — mine evner er fysiske, øvet ind' } },
-        { classes: ['sorcerer'], i18n: { en: "It's innate, part of my blood", es: 'Es innata, parte de mi sangre', da: 'Den er medfødt, en del af mit blod' } },
-        { classes: ['wizard'], i18n: { en: "I studied it for years, formula by formula", es: 'La estudié durante años, fórmula por fórmula', da: 'Jeg studerede den i årevis, formel for formel' } },
-        { classes: ['cleric', 'paladin'], i18n: { en: 'A god grants it to me', es: 'Un dios me la concede', da: 'En gud skænker mig den' } },
-        { classes: ['warlock'], i18n: { en: 'I bargained for it with something greater than me', es: 'La negocié con algo más grande que yo', da: 'Jeg forhandlede mig til den med noget større end mig' } },
-        { classes: ['druid'], i18n: { en: 'I draw it straight from nature itself', es: 'La saco directamente de la naturaleza misma', da: 'Jeg trækker den direkte fra selve naturen' } },
-        { classes: ['bard'], i18n: { en: "It rides on my words and music", es: 'Viaja en mis palabras y en mi música', da: 'Den rejser på mine ord og min musik' } },
-        { classes: ['monk'], i18n: { en: "It's inner discipline, no spells needed", es: 'Es disciplina interior, sin necesidad de hechizos', da: 'Det er indre disciplin, ingen besværgelser nødvendige' } }
+        { classes: ['fighter', 'barbarian', 'rogue', 'ranger'], i18n: { en: 'Practice — I earned it the hard way, over and over', es: 'De la práctica: la gané a fuerza de repetirlo una y otra vez', da: 'Øvelse — jeg har tjent den på den hårde måde, igen og igen' } },
+        { classes: ['sorcerer'], i18n: { en: "It's just always been part of who I am", es: 'Siempre fue parte de quién soy', da: 'Det har bare altid været en del af, hvem jeg er' } },
+        { classes: ['wizard'], i18n: { en: 'Studying it obsessively until I understood it cold', es: 'Estudiarlo obsesivamente hasta entenderlo a la perfección', da: 'At studere det besat, til jeg forstod det til bunds' } },
+        { classes: ['cleric', 'paladin'], i18n: { en: 'My values — something I believe in more than myself', es: 'Mis valores: algo en lo que creo más que en mí mismo/a', da: 'Mine værdier — noget jeg tror på mere end mig selv' } },
+        { classes: ['warlock'], i18n: { en: 'A hard experience that completely changed me', es: 'Una experiencia dura que me cambió por completo', da: 'En hård oplevelse, der forandrede mig fuldstændig' } },
+        { classes: ['druid'], i18n: { en: 'Staying connected to nature and slowing down', es: 'Mantenerme conectado/a con la naturaleza y bajar un cambio', da: 'At holde forbindelsen til naturen og sænke tempoet' } },
+        { classes: ['bard'], i18n: { en: 'How I express myself, in words or in art', es: 'Cómo me expreso, con palabras o con arte', da: 'Måden jeg udtrykker mig på, i ord eller kunst' } },
+        { classes: ['monk'], i18n: { en: 'Discipline — showing up for myself every single day', es: 'La disciplina: aparecer para mí mismo/a todos los días', da: 'Disciplin — at møde op for mig selv hver eneste dag' } }
       ]
     },
     {
-      i18n: { en: 'A tense negotiation is underway. What do you do?', es: 'Hay una negociación tensa en curso. ¿Qué hacés?', da: 'En anspændt forhandling er i gang. Hvad gør du?' },
+      i18n: { en: "There's a tense argument going on in your friend group. What do you do?", es: 'Hay una discusión tensa en tu grupo de amigos. ¿Qué hacés?', da: 'Der er en anspændt diskussion i din vennegruppe. Hvad gør du?' },
       options: [
-        { classes: ['bard'], i18n: { en: 'Charm the room until they forget to say no', es: 'Encanto la sala hasta que se olvidan de decir que no', da: 'Charmerer lokalet, til de glemmer at sige nej' } },
-        { classes: ['barbarian', 'fighter'], i18n: { en: 'Make it clear what happens if talks fail', es: 'Dejo claro qué pasa si la negociación fracasa', da: 'Gør det klart, hvad der sker, hvis forhandlingen fejler' } },
-        { classes: ['rogue'], i18n: { en: 'Quietly read the room for the real leverage', es: 'Leo la sala en silencio para hallar la verdadera ventaja', da: 'Aflæser stille lokalet for den reelle gevinst' } },
-        { classes: ['cleric', 'druid', 'wizard'], i18n: { en: 'Offer calm, well-reasoned counsel', es: 'Ofrezco un consejo calmo y bien razonado', da: 'Tilbyder rolig, velovervejet rådgivning' } },
-        { classes: ['ranger', 'monk'], i18n: { en: 'Stay quiet and let my presence speak', es: 'Me quedo en silencio y dejo que mi presencia hable', da: 'Forbliver tavs og lader min tilstedeværelse tale' } },
-        { classes: ['paladin'], i18n: { en: 'State exactly what I believe, plainly and without flinching', es: 'Digo exactamente lo que creo, claro y sin titubear', da: 'Siger præcis hvad jeg tror på, ligeud og uden at vige' } },
-        { classes: ['warlock', 'sorcerer'], i18n: { en: 'Steer it subtly toward the outcome I already decided', es: 'La dirijo con sutileza hacia el resultado que ya decidí', da: 'Styrer det diskret mod det udfald, jeg allerede har besluttet' } }
+        { classes: ['bard'], i18n: { en: 'Crack a joke and lighten the mood until it cools down', es: 'Tiro un chiste y aliviano el ambiente hasta que se calma', da: 'Kommer med en joke og letter stemningen, til det falder til ro' } },
+        { classes: ['barbarian', 'fighter'], i18n: { en: 'Say bluntly what everyone else is avoiding saying', es: 'Digo directamente lo que todos evitan decir', da: 'Siger direkte det, alle andre undgår at sige' } },
+        { classes: ['rogue'], i18n: { en: 'Stay quiet and quietly figure out who actually has a point', es: 'Me quedo callado/a y descifro en silencio quién tiene razón', da: 'Holder mund og finder stille ud af, hvem der egentlig har ret' } },
+        { classes: ['cleric', 'druid', 'wizard'], i18n: { en: 'Offer a calm, reasoned take once things settle a bit', es: 'Doy una opinión calma y razonada cuando las cosas se calman un poco', da: 'Kommer med en rolig, velovervejet holdning, når det falder lidt til ro' } },
+        { classes: ['ranger', 'monk'], i18n: { en: 'Stay out of it — my not picking sides says enough', es: 'Me mantengo al margen: no tomar partido ya dice bastante', da: 'Holder mig ude af det — at jeg ikke tager parti siger nok' } },
+        { classes: ['paladin'], i18n: { en: 'Say exactly what I think, plainly, even if it stings', es: 'Digo exactamente lo que pienso, claro y sin filtro, aunque duela', da: 'Siger præcis hvad jeg mener, ligeud, selv hvis det gør ondt' } },
+        { classes: ['warlock', 'sorcerer'], i18n: { en: 'Steer the conversation gently toward the outcome I want', es: 'Guío la conversación con sutileza hacia lo que quiero', da: 'Styrer samtalen forsigtigt mod det udfald, jeg vil have' } }
       ]
     },
     {
-      i18n: { en: 'Which principle guides you when the rules get grey?', es: '¿Qué principio te guía cuando las reglas se ponen grises?', da: 'Hvilket princip guider dig, når reglerne bliver grå?' },
+      i18n: { en: "What guides you when it's genuinely unclear what the right call is?", es: '¿Qué te guía cuando no está claro cuál es la decisión correcta?', da: 'Hvad guider dig, når det er reelt uklart, hvad det rigtige valg er?' },
       options: [
-        { classes: ['paladin', 'monk'], i18n: { en: 'Honor and order, no matter the cost', es: 'Honor y orden, cueste lo que cueste', da: 'Ære og orden, uanset prisen' } },
-        { classes: ['barbarian', 'sorcerer', 'ranger'], i18n: { en: 'Freedom above every rule', es: 'La libertad por encima de cualquier regla', da: 'Frihed over enhver regel' } },
-        { classes: ['rogue', 'warlock'], i18n: { en: 'Whatever actually gets the job done', es: 'Lo que realmente resuelva el problema', da: 'Hvad der faktisk får jobbet gjort' } },
-        { classes: ['druid'], i18n: { en: 'Balance — nothing tips too far either way', es: 'Equilibrio: que nada se incline demasiado hacia ningún lado', da: 'Balance — intet vipper for langt til nogen side' } },
-        { classes: ['cleric', 'bard'], i18n: { en: 'Compassion for whoever is in front of me', es: 'Compasión por quien tenga enfrente', da: 'Medfølelse for den, der står foran mig' } },
-        { classes: ['wizard', 'fighter'], i18n: { en: 'Calculated pragmatism — plan, then act', es: 'Pragmatismo calculado: primero planeo, después actúo', da: 'Kalkuleret pragmatisme — planlæg, så handl' } }
+        { classes: ['paladin', 'monk'], i18n: { en: 'Doing things properly, no matter the cost', es: 'Hacer las cosas bien, cueste lo que cueste', da: 'At gøre tingene ordentligt, uanset prisen' } },
+        { classes: ['barbarian', 'sorcerer', 'ranger'], i18n: { en: 'My own freedom to choose, over anyone else\'s rules', es: 'Mi libertad de elegir, por encima de las reglas de cualquiera', da: 'Min egen frihed til at vælge, over andres regler' } },
+        { classes: ['rogue', 'warlock'], i18n: { en: 'Whatever actually works, even if it bends the rules a bit', es: 'Lo que realmente funcione, aunque estire un poco las reglas', da: 'Hvad der faktisk virker, selv hvis det bøjer reglerne lidt' } },
+        { classes: ['druid'], i18n: { en: 'Balance — not letting anything tip too far in one direction', es: 'El equilibrio: que nada se incline demasiado hacia un lado', da: 'Balance — intet må vippe for langt til den ene side' } },
+        { classes: ['cleric', 'bard'], i18n: { en: 'Empathy for whoever is affected by the decision', es: 'La empatía por quien se ve afectado/a por la decisión', da: 'Empati for den, der bliver berørt af beslutningen' } },
+        { classes: ['wizard', 'fighter'], i18n: { en: 'Thinking it through carefully before doing anything', es: 'Pensarlo bien antes de hacer cualquier cosa', da: 'At tænke det grundigt igennem, før jeg gør noget' } }
       ]
     },
     {
-      i18n: { en: 'Pick the companion you\'d trust at your side.', es: 'Elegí al compañero en quien confiarías a tu lado.', da: 'Vælg den ledsager, du ville stole på ved din side.' },
+      i18n: { en: 'Who or what do you turn to when you actually need support?', es: '¿A quién o a qué recurrís cuando de verdad necesitás apoyo?', da: 'Hvem eller hvad søger du hen til, når du virkelig har brug for støtte?' },
       options: [
-        { classes: ['paladin', 'fighter'], i18n: { en: 'A loyal warhorse, trained for battle', es: 'Un caballo de guerra leal, entrenado para el combate', da: 'En loyal krigshest, trænet til kamp' } },
-        { classes: ['ranger', 'druid'], i18n: { en: 'A wild animal companion who trusts no one else', es: 'Un animal salvaje que no confía en nadie más', da: 'En vild dyreledsager, der ikke stoler på andre' } },
-        { classes: ['rogue', 'warlock', 'monk'], i18n: { en: 'No one — I work best alone', es: 'Nadie: trabajo mejor solo/a', da: 'Ingen — jeg arbejder bedst alene' } },
-        { classes: ['bard', 'cleric'], i18n: { en: 'The found family my party has become', es: 'La familia elegida en la que se convirtió mi grupo', da: 'Den fundne familie, min gruppe er blevet' } },
-        { classes: ['sorcerer', 'wizard'], i18n: { en: 'A small familiar spirit that whispers secrets', es: 'Un pequeño espíritu familiar que susurra secretos', da: 'En lille åndsfamiliar, der hvisker hemmeligheder' } }
+        { classes: ['paladin', 'fighter'], i18n: { en: "That one friend I've trusted for years and never doubted", es: 'Ese amigo o amiga de años en quien confío ciegamente', da: 'Den ven, jeg har stolet på i årevis og aldrig tvivlet på' } },
+        { classes: ['ranger', 'druid'], i18n: { en: 'My pet, or just time alone outdoors', es: 'Mi mascota, o simplemente tiempo a solas al aire libre', da: 'Mit kæledyr, eller bare tid alene udendørs' } },
+        { classes: ['rogue', 'warlock', 'monk'], i18n: { en: "No one — I'd rather work through it on my own", es: 'A nadie: prefiero resolverlo por mi cuenta', da: 'Ingen — jeg vil hellere arbejde mig igennem det alene' } },
+        { classes: ['bard', 'cleric'], i18n: { en: 'My friend group — they\'re basically my second family', es: 'Mi grupo de amigos: son básicamente mi segunda familia', da: 'Min vennegruppe — de er praktisk talt min anden familie' } },
+        { classes: ['sorcerer', 'wizard'], i18n: { en: 'Researching it myself until it makes sense', es: 'Investigarlo yo mismo/a hasta que tenga sentido', da: 'At undersøge det selv, til det giver mening' } }
       ]
     },
     {
-      i18n: { en: 'What legacy do you want people to remember?', es: '¿Qué legado querés que la gente recuerde?', da: 'Hvilken arv vil du have, folk husker?' },
+      i18n: { en: 'What do you want people to remember about you?', es: '¿Qué querés que la gente recuerde de vos?', da: 'Hvad vil du have, folk husker om dig?' },
       options: [
-        { classes: ['bard', 'rogue'], i18n: { en: 'A story so good it gets told for generations', es: 'Una historia tan buena que se cuenta por generaciones', da: 'En historie så god, den bliver fortalt i generationer' } },
-        { classes: ['paladin', 'fighter'], i18n: { en: 'A kingdom that stayed standing because of me', es: 'Un reino que siguió en pie gracias a mí', da: 'Et kongerige der forblev stående på grund af mig' } },
-        { classes: ['druid', 'ranger'], i18n: { en: 'A wilderness that was left untouched', es: 'Una naturaleza que quedó intacta', da: 'En vildmark der forblev urørt' } },
-        { classes: ['wizard', 'warlock'], i18n: { en: 'Forbidden knowledge finally unlocked', es: 'Un conocimiento prohibido finalmente desbloqueado', da: 'Forbudt viden endelig låst op' } },
-        { classes: ['barbarian', 'sorcerer'], i18n: { en: 'Raw power that people still fear', es: 'Un poder crudo que la gente todavía teme', da: 'Rå kraft som folk stadig frygter' } },
-        { classes: ['monk', 'cleric'], i18n: { en: 'A peace I found and helped others find too', es: 'Una paz que encontré y ayudé a otros a encontrar también', da: 'En fred jeg fandt og hjalp andre med at finde' } }
+        { classes: ['bard', 'rogue'], i18n: { en: 'The stories and moments that are still fun to tell later', es: 'Las anécdotas y momentos que siguen siendo divertidos de contar', da: 'De historier og øjeblikke, der stadig er sjove at fortælle bagefter' } },
+        { classes: ['paladin', 'fighter'], i18n: { en: 'That I was someone people could actually count on', es: 'Que fui alguien con quien la gente realmente podía contar', da: 'At jeg var en, folk faktisk kunne regne med' } },
+        { classes: ['druid', 'ranger'], i18n: { en: 'That I took care of the people and places around me', es: 'Que cuidé a la gente y los lugares que me rodeaban', da: 'At jeg passede på de mennesker og steder, der omgav mig' } },
+        { classes: ['wizard', 'warlock'], i18n: { en: 'That I figured out something nobody else had', es: 'Que descubrí algo que nadie más había descubierto', da: 'At jeg fandt ud af noget, ingen andre havde' } },
+        { classes: ['barbarian', 'sorcerer'], i18n: { en: "That I left a mark — people didn't forget me", es: 'Que dejé una marca: la gente no se olvidó de mí', da: 'At jeg satte mit præg — folk glemte mig ikke' } },
+        { classes: ['monk', 'cleric'], i18n: { en: 'That I found some peace, and helped others find theirs too', es: 'Que encontré algo de paz, y ayudé a otros a encontrar la suya', da: 'At jeg fandt en form for fred og hjalp andre med at finde deres' } }
       ]
     }
   ];
