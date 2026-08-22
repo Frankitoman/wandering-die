@@ -6,6 +6,7 @@
 <title>The Wandering Die — Encontrá tu clase de D&D</title>
 <meta name="description" content="Descubrí qué clase de Dungeons &amp; Dragons sos con un quiz de 10 preguntas, y tirá el Destiny Dice para tus decisiones del día a día.">
 <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<link rel="stylesheet" href="css/scrollcraft.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -76,14 +77,16 @@
   </div>
 </header>
 
-<section class="section" id="classes" data-scene="classes">
-  <div class="container">
-    <div class="section__head" data-reveal>
-      <p class="section__kicker" data-i18n="nav_classes">Clases</p>
-      <h2 class="section__title" data-i18n="classes_title">Los doce caminos</h2>
-      <p class="section__lead" data-i18n="classes_lead">Cada clase de D&amp;D 5e representa una forma distinta de enfrentar el mundo. Una de ellas es la tuya.</p>
+<section class="classes-act" id="classes" data-scene="classes" data-sc-act="pan" data-sc-span="4.6">
+  <div data-sc-stage class="classes-stage">
+    <div class="classes-rail" data-sc-pan="0.04">
+      <div class="classes-rail__lead">
+        <p class="section__kicker" data-i18n="nav_classes">Clases</p>
+        <h2 class="section__title" data-i18n="classes_title">Los doce caminos</h2>
+        <p class="section__lead" data-i18n="classes_lead">Cada clase de D&amp;D 5e representa una forma distinta de enfrentar el mundo. Una de ellas es la tuya.</p>
+      </div>
+      <div class="classes-grid" id="classesGrid"></div>
     </div>
-    <div class="classes-grid" id="classesGrid"></div>
   </div>
 </section>
 
@@ -192,5 +195,15 @@
 <script type="module" src="js/dice3d.js"></script>
 <script src="js/dice.js"></script>
 <script src="js/main.js"></script>
+<script src="js/scrollcraft.js"></script>
+<script>
+  // Mounted after the scripts above so #classesGrid is already populated
+  // (renderClassesGrid runs inside quiz.js's own DOMContentLoaded handler,
+  // registered earlier) — the pan act needs the real card widths to measure
+  // its scroll overflow correctly, not an empty rail.
+  document.addEventListener('DOMContentLoaded', function () {
+    ScrollCraft.mount(document.body);
+  });
+</script>
 </body>
 </html>

@@ -21,6 +21,20 @@
   --radius: 14px;
   --radius-sm: 8px;
   --sc-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* ---- scrollcraft engine tokens, mapped to the brand above ----
+     Kept to the same two families and the same palette on purpose: the
+     quiz and Destiny Dice sit under this stylesheet too, and a wholesale
+     restyle of the engine tokens would visibly change them even though
+     their markup and logic stay untouched. */
+  --sc-canvas: var(--bg);
+  --sc-surface: var(--surface);
+  --sc-ink: var(--ink);
+  --sc-ink-soft: var(--muted);
+  --sc-accent: var(--violet-bright);
+  --sc-accent-ink: var(--bg);
+  --sc-font-display: var(--font-display);
+  --sc-font-text: var(--font-body);
 }
 
 * { box-sizing: border-box; }
@@ -179,9 +193,29 @@ section { position: relative; }
 .section__lead { margin-top: 14px; color: var(--muted); font-size: 1.1rem; text-wrap: pretty; }
 .section--alt { background: linear-gradient(180deg, transparent, rgba(140,111,224,0.05), transparent); }
 
+/* ---------- Classes: a pinned rail, panned sideways by vertical scroll ---
+   The section holds (data-sc-act="pan") while the reader keeps scrolling
+   down; scrollcraft.js turns that vertical travel into horizontal motion
+   on .classes-rail. Everything below is markup/styling on top of that
+   mechanism — see references/devices.md §3 in the scrollcraft skill. */
+.classes-act { position: relative; }
+.classes-stage {
+  display: flex; align-items: center;
+  padding: 0 var(--sc-gutter, clamp(1.25rem, 5vw, 5.5rem));
+}
+.classes-rail { align-items: center; gap: clamp(20px, 2.6vw, 34px); }
+.classes-rail__lead {
+  flex: 0 0 auto; width: clamp(15rem, 24vw, 21rem); padding-right: clamp(8px, 1.5vw, 20px);
+}
+.classes-rail__lead .section__kicker,
+.classes-rail__lead .section__title,
+.classes-rail__lead .section__lead { text-align: left; }
+.classes-rail__lead .section__title { margin: 0; }
+
 /* ---------- Classes grid (gallery: portrait + museum-label caption) ---------- */
-.classes-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.classes-grid { display: contents; }
 .class-chip {
+  flex: 0 0 auto; width: clamp(14rem, 19vw, 18rem);
   position: relative; overflow: hidden; background: var(--surface);
   border: 1px solid var(--line); border-radius: var(--radius); text-align: left;
   box-shadow: 0 1px 0 rgba(241,242,247,0.05) inset, 0 18px 30px -22px rgba(0,0,0,0.7);
@@ -331,22 +365,20 @@ section { position: relative; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1080px) {
-  .classes-grid { grid-template-columns: repeat(3, 1fr); }
   .dice-layout { grid-template-columns: 1fr; }
   .dice-stage { position: static; }
 }
 @media (max-width: 860px) {
   .nav__links, .nav__right .lang-switch { display: none; }
   .nav__burger { display: flex; }
-  .classes-grid { grid-template-columns: repeat(2, 1fr); }
   .quiz-panel { padding: 32px 22px; }
   .result-panel__content { padding: 52px 24px 40px; }
+  .classes-rail__lead { width: 13rem; }
+  .class-chip { width: 12.5rem; }
 }
 @media (max-width: 560px) {
   .hero { padding: 120px 20px 60px; }
   .hero__actions { flex-direction: column; align-items: stretch; }
-  .classes-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .class-chip { padding: 18px 12px; }
   .quiz-nav { flex-wrap: wrap; }
   .dice-custom__row { flex-direction: column; }
 }
