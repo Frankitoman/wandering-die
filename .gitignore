@@ -9,3 +9,6 @@ gen_run.log
 .cf_token
 .gh_token
 *_raw.png
+.env
+scrollcraft/
+lab/

@@ -22,10 +22,12 @@
     grid.innerHTML = CLASSES.map(function (c) {
       var info = c.i18n[L];
       return '<div class="class-chip" data-reveal>' +
-        '<span class="class-chip__icon">' + c.icon + '</span>' +
+        '<div class="class-chip__portrait"><img src="' + c.image + '" alt="" loading="lazy" width="400" height="300">' +
+        '<span class="class-chip__icon">' + c.icon + '</span></div>' +
+        '<div class="class-chip__body">' +
         '<span class="class-chip__name">' + info.name + '</span>' +
         '<span class="class-chip__tagline">' + info.tagline + '</span>' +
-        '</div>';
+        '</div></div>';
     }).join('');
   }
 
@@ -111,7 +113,8 @@
     var L = lang();
     var cls = classById(state.result);
     var info = cls.i18n[L];
-    els.result.style.setProperty('--result-bg', 'url(' + cls.image + ')');
+    var bgEl = els.result.querySelector('.result-panel__bg');
+    if (bgEl) bgEl.style.backgroundImage = 'url(' + cls.image + ')';
     document.getElementById('resultIcon').innerHTML = cls.icon;
     document.getElementById('resultKicker').textContent = t('result_kicker');
     document.getElementById('resultName').textContent = info.name;

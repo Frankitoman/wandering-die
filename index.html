@@ -10,20 +10,25 @@
 </head>
 <body>
 
-<div class="dice-rain" aria-hidden="true">
-  <svg class="dice-rain__item" style="left:4%; width:52px; animation-duration:26s; animation-delay:-3s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,10 88,82 12,82"/><polygon points="50,45 69,82 31,82"/><path d="M50,10 L50,45 M12,82 L31,82 M88,82 L69,82"/></svg>
-  <svg class="dice-rain__item" style="left:13%; width:64px; animation-duration:33s; animation-delay:-18s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,8 88,28 50,48 12,28"/><polygon points="12,28 50,48 50,92 12,72"/><polygon points="88,28 50,48 50,92 88,72"/></svg>
-  <svg class="dice-rain__item" style="left:23%; width:48px; animation-duration:21s; animation-delay:-9s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,5 85,50 50,95 15,50"/><path d="M15,50 L85,50 M50,5 L50,95"/></svg>
-  <svg class="dice-rain__item" style="left:33%; width:58px; animation-duration:29s; animation-delay:-24s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,4 78,32 68,96 32,96 22,32"/><path d="M50,4 L50,50 M22,32 L50,50 L78,32 M32,96 L50,50 L68,96"/></svg>
-  <svg class="dice-rain__item" style="left:43%; width:70px; animation-duration:36s; animation-delay:-6s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,4 92,36 76,88 24,88 8,36"/><polygon points="50,26 71,42 63,66 37,66 29,42"/><path d="M50,4 L50,26 M92,36 L71,42 M76,88 L63,66 M24,88 L37,66 M8,36 L29,42"/></svg>
-  <svg class="dice-rain__item" style="left:53%; width:54px; animation-duration:24s; animation-delay:-14s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,3 93,26 93,74 50,97 7,74 7,26"/><path d="M50,3v94M7,26l43,18 43-18M7,74l43-18 43,18"/></svg>
-  <svg class="dice-rain__item" style="left:62%; width:50px; animation-duration:27s; animation-delay:-20s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,10 88,82 12,82"/><polygon points="50,45 69,82 31,82"/><path d="M50,10 L50,45 M12,82 L31,82 M88,82 L69,82"/></svg>
-  <svg class="dice-rain__item" style="left:71%; width:66px; animation-duration:31s; animation-delay:-2s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,8 88,28 50,48 12,28"/><polygon points="12,28 50,48 50,92 12,72"/><polygon points="88,28 50,48 50,92 88,72"/></svg>
-  <svg class="dice-rain__item" style="left:80%; width:46px; animation-duration:19s; animation-delay:-11s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,5 85,50 50,95 15,50"/><path d="M15,50 L85,50 M50,5 L50,95"/></svg>
-  <svg class="dice-rain__item" style="left:88%; width:60px; animation-duration:34s; animation-delay:-27s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,4 92,36 76,88 24,88 8,36"/><polygon points="50,26 71,42 63,66 37,66 29,42"/><path d="M50,4 L50,26 M92,36 L71,42 M76,88 L63,66 M24,88 L37,66 M8,36 L29,42"/></svg>
-  <svg class="dice-rain__item" style="left:8%; width:44px; animation-duration:23s; animation-delay:-16s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,3 93,26 93,74 50,97 7,74 7,26"/><path d="M50,3v94M7,26l43,18 43-18M7,74l43-18 43,18"/></svg>
-  <svg class="dice-rain__item" style="left:95%; width:56px; animation-duration:28s; animation-delay:-8s;" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="50,4 78,32 68,96 32,96 22,32"/><path d="M50,4 L50,50 M22,32 L50,50 L78,32 M32,96 L50,50 L68,96"/></svg>
+<!-- The world: one persistent backdrop that never hard-cuts between sections -->
+<div class="bg-world" aria-hidden="true" id="bgWorld">
+  <div class="bg-world__layer bg-world__layer--hero is-active" data-layer="hero"></div>
+  <div class="bg-world__layer bg-world__layer--classes" data-layer="classes"></div>
+  <div class="bg-world__layer bg-world__layer--dice" data-layer="dice"></div>
 </div>
+<div class="grain" aria-hidden="true"></div>
+
+<!-- Signature move: dice that react to the reader (js/dice-field.js) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="dfGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f1f2f7" stop-opacity="0.9"/>
+      <stop offset="55%" stop-color="#c7cbd8" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#5b3fa8" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+</svg>
+<div class="dice-field" aria-hidden="true" id="diceField"></div>
 
 <nav class="nav" id="mainNav">
   <a href="#" class="nav__brand">
@@ -58,7 +63,8 @@
   </div>
 </div>
 
-<header class="hero">
+<header class="hero" data-scene="hero">
+  <div class="hero__scrim" aria-hidden="true"></div>
   <div class="hero__inner">
     <p class="hero__ornament" data-i18n="hero_kicker">Una herramienta para aventureros indecisos</p>
     <h1 class="hero__title" data-i18n="hero_title">Encontrá tu clase. Dejá que el destino decida el resto.</h1>
@@ -70,7 +76,7 @@
   </div>
 </header>
 
-<section class="section" id="classes">
+<section class="section" id="classes" data-scene="classes">
   <div class="container">
     <div class="section__head" data-reveal>
       <p class="section__kicker" data-i18n="nav_classes">Clases</p>
@@ -81,7 +87,7 @@
   </div>
 </section>
 
-<section class="section section--alt" id="quiz">
+<section class="section section--alt" id="quiz" data-scene="classes">
   <div class="container">
     <div class="section__head" data-reveal>
       <p class="section__kicker" data-i18n="nav_quiz">Encontrá tu clase</p>
@@ -89,7 +95,7 @@
       <p class="section__lead" data-i18n="quiz_lead">10 preguntas, sin respuestas correctas ni incorrectas. Elegí lo que más se parezca a vos.</p>
     </div>
 
-    <div class="quiz-panel" data-reveal>
+    <div class="quiz-panel ornate-frame" data-reveal>
       <div id="quizIntro">
         <div class="quiz-panel__intro-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><polygon points="12,2 21,8 21,16 12,22 3,16 3,8"/></svg></div>
         <button type="button" class="btn btn--primary" id="quizStartBtn" data-i18n="quiz_start">Empezar</button>
@@ -124,7 +130,7 @@
   </div>
 </section>
 
-<section class="section" id="dice">
+<section class="section" id="dice" data-scene="dice">
   <div class="container">
     <div class="section__head" data-reveal>
       <p class="section__kicker" data-i18n="nav_dice">Destiny Dice</p>
@@ -133,7 +139,7 @@
     </div>
 
     <div class="dice-layout">
-      <div class="dice-picker" data-reveal>
+      <div class="dice-picker ornate-frame" data-reveal>
         <p class="dice-picker__label" data-i18n="dice_pick_prompt">Elegí una decisión para tirar el dado</p>
         <div class="dice-filters" id="diceCategoryFilters"></div>
         <div class="dice-scenario-list" id="diceScenarioList"></div>
@@ -148,7 +154,7 @@
         </div>
       </div>
 
-      <div class="dice-stage" id="diceStage" data-reveal hidden>
+      <div class="dice-stage ornate-frame" id="diceStage" data-reveal hidden>
         <p class="dice-stage__prompt" id="diceStagePrompt"></p>
         <div class="d20" id="diceD20">
           <canvas id="diceD20Canvas"></canvas>
@@ -180,6 +186,8 @@
 <script src="js/quiz-data.js"></script>
 <script src="js/dice-data.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/bg-world.js"></script>
+<script src="js/dice-field.js"></script>
 <script src="js/quiz.js"></script>
 <script type="module" src="js/dice3d.js"></script>
 <script src="js/dice.js"></script>
