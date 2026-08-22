@@ -7,3 +7,16 @@ Herramienta para la comunidad de Dungeons &amp; Dragons: un quiz de 10 preguntas
 - Las 12 clases de D&D 5e con imágenes generadas por IA (`js/classes-data.js`, `assets/images/classes/`)
 - Quiz de clase con banco de preguntas y puntaje por clase (`js/quiz-data.js`, `js/quiz.js`)
 - Destiny Dice: banco de ~24 decisiones predefinidas por categoría + entrada de texto libre con heurística de dificultad (DC) automática (`js/dice-data.js`, `js/dice.js`)
+
+## Deploy
+
+No hay CI/CD automático conectado a este repo. Cada cambio se publica a mano:
+
+```bash
+git pull
+mkdir _site               # solo si no existe todavía
+xcopy index.html _site\ /Y
+xcopy css _site\css\ /E /I /Y
+xcopy js _site\js\ /E /I /Y
+xcopy assets _site\assets\ /E /I /Y
+npx wrangler deploy
