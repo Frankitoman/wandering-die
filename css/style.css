@@ -246,6 +246,13 @@ body.is-locked { overflow: hidden; }
 }
 
 /* --------------------------------------------------------- ficha de clase */
+/* El `display: grid` de acá abajo pisa el `display: none` que el navegador le
+   da a [hidden], así que sin esta línea el modal NUNCA se oculta: su velo
+   (oscuro + backdrop-filter: blur) queda tapando la página entera para
+   siempre, y encima se come todos los clics. Es exactamente lo que pasó.
+   Cualquier regla de display sobre un elemento que se controla con [hidden]
+   necesita este acompañamiento. */
+.sheet[hidden] { display: none; }
 .sheet { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: var(--gutter); }
 .sheet__veil { position: absolute; inset: 0; background: rgba(30, 27, 20, 0.55); backdrop-filter: blur(3px); }
 .sheet__box {
