@@ -10,11 +10,14 @@
   --parchment-warm: #efe2cc;  /* superficies elevadas */
   --parchment-deep: #e5d5ba;  /* superficies más marcadas */
   --bark:           #2e2a20;  /* tinta principal */
-  --bark-soft:      #6d6455;  /* tinta secundaria, entintada, nunca gris plano */
+  /* Secundario y acento medidos contra el peor punto de las texturas de fondo:
+     con los tonos anteriores (#6d6455 y #8d5514) el texto chico caía a 3.6-3.8:1.
+     Estos dan 5.2:1 y siguen leyéndose como secundario y como acento. */
+  --bark-soft:      #5c5344;  /* tinta secundaria, entintada, nunca gris plano */
   --moss:           #46583a;  /* verde profundo, estructura */
   --moss-bright:    #75904f;  /* verde vivo, detalles */
   --amber:          #b3701f;  /* EL acento: luz del sol entre las hojas */
-  --amber-deep:     #8d5514;
+  --amber-deep:     #7a4711;  /* la versión del acento que puede llevar texto */
   --line:           rgba(46, 42, 32, 0.14);
   --line-strong:    rgba(46, 42, 32, 0.28);
 
@@ -116,9 +119,17 @@ body.is-locked { overflow: hidden; }
   background: url('../assets/images/bg/hero.webp') center right / cover no-repeat;
 }
 .hero__bg::after {
-  /* la luz cae hacia la izquierda: el texto se apoya ahí, sin oscurecer la foto */
+  /* Velo de pergamino sobre la mitad izquierda, donde va el texto. Se mantiene
+     casi opaco a lo largo de TODA la columna de texto y recién después se abre:
+     medido, el titular queda en ~10:1 y la bajada en ~6:1. Con una caída más
+     temprana el texto llegaba a 1.2:1 sobre el pasto. */
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(100deg, var(--parchment) 0%, rgba(246,237,221,0.92) 28%, rgba(246,237,221,0.55) 46%, rgba(246,237,221,0) 68%);
+  background: linear-gradient(100deg,
+    var(--parchment) 0%,
+    rgba(246,237,221,0.97) 40%,
+    rgba(246,237,221,0.88) 56%,
+    rgba(246,237,221,0.45) 72%,
+    rgba(246,237,221,0) 88%);
 }
 .hero__inner {
   position: relative; z-index: 1;
@@ -156,17 +167,17 @@ body.is-locked { overflow: hidden; }
 .section::before { content: ''; position: absolute; inset: 0; z-index: 0; }
 .section--classes { background: linear-gradient(180deg, var(--parchment) 0%, var(--parchment-warm) 100%); }
 .section--classes::before {
-  opacity: 0.14;
+  opacity: 0.10;
   background: url('../assets/images/bg/classes.webp') center / cover no-repeat;
   mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
 }
 .section--quiz::before {
-  opacity: 0.15;
+  opacity: 0.10;
   background: url('../assets/images/bg/quiz.webp') center / cover no-repeat;
 }
 .section--dice { background: var(--parchment-warm); }
 .section--dice::before {
-  opacity: 0.13;
+  opacity: 0.10;
   background: url('../assets/images/bg/dice.webp') center / cover no-repeat;
   mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent);
 }
