@@ -113,28 +113,41 @@ body.is-locked { overflow: hidden; }
 .nav__links a:hover { color: var(--bark); border-bottom-color: var(--amber); }
 
 /* --------------------------------------------------------------------- hero */
-.hero { position: relative; min-height: 100svh; display: flex; align-items: center; padding: 120px 0 72px; overflow: hidden; }
-.hero__bg {
-  position: absolute; inset: 0; z-index: 0;
-  background: url('../assets/images/bg/hero.webp') center right / cover no-repeat;
+/* Hero partido en dos: texto sobre pergamino liso, foto en su propio panel.
+   Antes la foto iba a sangre completa con un velo encima para que el texto se
+   leyera; ese velo terminaba lavando la imagen entera y la mitad izquierda
+   quedaba un vacío crema. Separarlos deja las dos cosas fuertes: contraste
+   perfecto en el texto y la foto nítida a plena intensidad. */
+.hero {
+  position: relative; min-height: 100svh;
+  display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+  align-items: stretch; overflow: hidden;
 }
-.hero__bg::after {
-  /* Velo de pergamino sobre la mitad izquierda, donde va el texto. Se mantiene
-     casi opaco a lo largo de TODA la columna de texto y recién después se abre:
-     medido, el titular queda en ~10:1 y la bajada en ~6:1. Con una caída más
-     temprana el texto llegaba a 1.2:1 sobre el pasto. */
+.hero__copy {
+  position: relative; z-index: 2;
+  background: var(--parchment);
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 128px clamp(1.5rem, 3.5vw, 3.5rem) 72px var(--gutter);
+}
+/* Un borde difuminado sobre la foto, para que el corte entre columna y panel
+   no se lea como una línea dura. */
+.hero__copy::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 100%; width: clamp(40px, 6vw, 110px);
+  background: linear-gradient(90deg, var(--parchment), rgba(246,237,221,0));
+  pointer-events: none;
+}
+.hero__copy-inner { max-width: 34rem; }
+
+.hero__media {
+  position: relative;
+  background: url('../assets/images/bg/hero.webp') center / cover no-repeat;
+  display: flex; align-items: center; justify-content: center;
+  padding: 96px var(--gutter) 72px clamp(1rem, 2vw, 2rem);
+}
+/* Viñeta suave: hunde apenas los bordes del panel para que la pieza se despegue. */
+.hero__media::before {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(100deg,
-    var(--parchment) 0%,
-    rgba(246,237,221,0.97) 40%,
-    rgba(246,237,221,0.88) 56%,
-    rgba(246,237,221,0.45) 72%,
-    rgba(246,237,221,0) 88%);
-}
-.hero__inner {
-  position: relative; z-index: 1;
-  width: 100%; max-width: var(--wrap); margin-inline: auto; padding-inline: var(--gutter);
-  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(2rem, 5vw, 5rem); align-items: center;
+  background: radial-gradient(75% 65% at 50% 48%, rgba(30,36,20,0) 40%, rgba(30,36,20,0.28) 100%);
 }
 .hero__kicker {
   font-family: var(--font-display); font-size: 0.85rem; letter-spacing: 0.22em; text-transform: uppercase;
@@ -145,15 +158,24 @@ body.is-locked { overflow: hidden; }
 .hero__actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
 
 /* la pieza: un solo objeto, tratado como vitrina de museo */
-.hero__piece { display: flex; flex-direction: column; align-items: center; gap: 18px; }
-.piece { position: relative; width: min(100%, 460px); aspect-ratio: 1; }
+/* El ancho vive acá: si lo pone .piece, queda dentro de dos contenedores flex
+   que se encogen al contenido y la pieza colapsa a un tercio de lo que debería. */
+.hero__piece {
+  position: relative; z-index: 1; width: min(100%, 460px);
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+}
+.piece { position: relative; width: 100%; aspect-ratio: 1; }
 .piece::before {
   /* halo de luz cálida detrás de la pieza, no un recuadro */
   content: ''; position: absolute; inset: 6%;
   background: radial-gradient(circle at 50% 46%, rgba(255,226,168,0.85), rgba(255,226,168,0) 68%);
 }
 .piece canvas { position: relative; width: 100%; height: 100%; }
-.piece__caption { font-size: 0.82rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--bark-soft); }
+/* La leyenda va sobre la foto: crema con sombra, no la tinta del pergamino. */
+.piece__caption {
+  font-size: 0.82rem; letter-spacing: 0.16em; text-transform: uppercase;
+  color: #f7f0e0; text-shadow: 0 1px 3px rgba(24,28,16,0.75);
+}
 .piece.is-fallback::after {
   content: 'd20'; position: absolute; inset: 0; display: grid; place-items: center;
   font-family: var(--font-display); font-size: 3rem; color: var(--moss);
@@ -344,11 +366,14 @@ body.is-locked { overflow: hidden; }
 
 /* --------------------------------------------------------------- responsive */
 @media (max-width: 1000px) {
-  .hero { min-height: auto; padding-top: 108px; }
-  .hero__inner { grid-template-columns: 1fr; }
-  .hero__piece { order: -1; }
+  /* Apilado: el panel de foto con la pieza arriba, el texto sobre pergamino
+     debajo. Sigue sin haber texto encima de la foto. */
+  .hero { min-height: auto; grid-template-columns: 1fr; }
+  .hero__media { order: -1; min-height: 56svh; padding: 104px var(--gutter) 40px; }
+  .hero__copy { justify-content: flex-start; padding: 44px var(--gutter) 64px; }
+  .hero__copy::after { display: none; }
+  .hero__copy-inner { max-width: none; }
   .piece { width: min(74%, 340px); }
-  .hero__bg::after { background: linear-gradient(180deg, rgba(246,237,221,0.72) 0%, rgba(246,237,221,0.9) 55%, var(--parchment) 100%); }
   .dice { grid-template-columns: 1fr; }
   .dice__stage { position: static; }
   .sheet__inner { grid-template-columns: 1fr; }

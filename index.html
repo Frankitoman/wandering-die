@@ -40,10 +40,12 @@
 <main id="contenido">
 
   <!-- ---------------------------------------------------------------- hero -->
+  <!-- Hero partido: la columna de texto es pergamino liso (contraste perfecto,
+       sin velos encima de una foto) y el bosque ocupa su propio panel a la
+       derecha, nítido y a plena intensidad, con el dado flotando sobre él. -->
   <header class="hero" id="inicio">
-    <div class="hero__bg" aria-hidden="true"></div>
-    <div class="hero__inner">
-      <div class="hero__copy">
+    <div class="hero__copy">
+      <div class="hero__copy-inner">
         <p class="hero__kicker">Doce caminos. Uno es el tuyo.</p>
         <h1 class="hero__title">El camino empieza<br>con una tirada</h1>
         <p class="hero__lead">Respondé diez situaciones de campaña y descubrí qué clase de D&amp;D sos en realidad. Y cuando la vida te deje sin saber qué hacer, tirá el dado y que decida el destino.</p>
@@ -52,6 +54,8 @@
           <a class="btn btn--ghost" href="#dado" data-goto="dado">Tirar el dado</a>
         </div>
       </div>
+    </div>
+    <div class="hero__media">
       <div class="hero__piece">
         <div class="piece" id="heroPiece">
           <canvas id="heroDieCanvas" aria-label="Un dado de veinte caras que gira lentamente" role="img"></canvas>

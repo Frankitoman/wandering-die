@@ -25,15 +25,18 @@ import { buildDie } from './die-mesh.js';
     camera.position.set(0, 0.4, 6.2);
     camera.lookAt(0, 0, 0);
 
-    // Luz de galería: clave cálida marcada, relleno verde bosque, contraluz suave.
-    scene.add(new THREE.HemisphereLight(0xfff2d8, 0x59683f, 1.0));
-    var key = new THREE.DirectionalLight(0xffdca8, 2.4);
+    // Luz de galería. El relleno era verde (0xd6efaa) y teñía el dado de
+    // lechuga: la piedra tiene que leerse como hueso, no como hoja. Ahora es
+    // cálido neutro, con menos ambiente y una clave más marcada para que las
+    // facetas y el relieve de la textura se vean.
+    scene.add(new THREE.HemisphereLight(0xfff2d8, 0x6d6550, 0.72));
+    var key = new THREE.DirectionalLight(0xffe0b4, 2.7);
     key.position.set(3.5, 5, 4);
     scene.add(key);
-    var fill = new THREE.DirectionalLight(0xd6efaa, 0.6);
+    var fill = new THREE.DirectionalLight(0xeae2cc, 0.42);
     fill.position.set(-4, -1, 2);
     scene.add(fill);
-    var rim = new THREE.DirectionalLight(0xffffff, 0.9);
+    var rim = new THREE.DirectionalLight(0xfff6e6, 1.0);
     rim.position.set(-2, 3, -5);
     scene.add(rim);
 

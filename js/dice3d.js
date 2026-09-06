@@ -33,8 +33,8 @@ import { buildDie, readTopFace } from './die-mesh.js';
     camera.lookAt(0, 0, 0);
 
     // Luz de tarde en el bosque: clave cálida alta, relleno verde desde abajo.
-    scene.add(new THREE.HemisphereLight(0xfff1d4, 0x51603a, 0.9));
-    var key = new THREE.DirectionalLight(0xffd9a0, 2.0);
+    scene.add(new THREE.HemisphereLight(0xfff1d4, 0x6f6550, 0.78));
+    var key = new THREE.DirectionalLight(0xffdfae, 2.2);
     key.position.set(4, 9, 4);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
@@ -42,7 +42,7 @@ import { buildDie, readTopFace } from './die-mesh.js';
     key.shadow.camera.right = key.shadow.camera.top = 6;
     key.shadow.radius = 3;
     scene.add(key);
-    var rim = new THREE.DirectionalLight(0xc6e493, 0.45);
+    var rim = new THREE.DirectionalLight(0xdcd6bd, 0.4);
     rim.position.set(-5, 3, -4);
     scene.add(rim);
 
