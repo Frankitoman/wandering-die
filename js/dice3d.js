@@ -1,392 +1,220 @@
-// The Wandering Die — real 3D d20 (icosahedron, one numbered face 1-20) rendered with Three.js
+// The Wandering Die — el Destiny Dice, con simulación física real.
+//
+// A diferencia de la versión anterior (una animación dirigida que ya sabía el
+// resultado antes de empezar), acá el número NO se decide de antemano: se tira
+// el dado en un mundo con gravedad, rebota y rueda sobre una bandeja de madera,
+// y cuando se detiene se lee qué cara quedó mirando hacia arriba. El resultado
+// es consecuencia de la física, como en una mesa de verdad.
 import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
+import { buildDie, readTopFace } from './die-mesh.js';
 
-(function () {
+(function (global) {
   'use strict';
 
-  var SIZE = 340; // internal render resolution; CSS scales the box responsively without
-                   // touching this, so the bounce frame's proportions stay identical everywhere
-  var CAMERA_DISTANCE = 12.3; // pulled back so the (bigger die, bigger frame) still fits
-                               // entirely inside the visible frustum with margin to spare
-  var RADIUS = 1.5; // bigger physical die; camera distance above keeps it safely clear of clipping
-  var ROLL_DURATION = 2800;
+  var RADIUS = 1;
+  var TRAY = 3.4;            // semi-extensión de la bandeja: el dado no sale de acá
+  var SETTLE_TIMEOUT = 7000; // si queda trabado, se lee igual y listo
 
-  var renderer, scene, camera, dieGroup, dieContainer;
-  var faceNormals = [], faceUps = [];
-  var rolling = false;
-  var rollTargetQuat = new THREE.Quaternion();
-  var pendingResultNumber = 20;
-  var flourishTimeout = null;
+  var renderer, scene, camera, world, dieMesh, dieBody;
+  var faceNormals = [], faceNumbers = [];
+  var rafId = null, lastTime = null, rolling = false, settleTimer = null;
+  var onSettle = null, reduce = false;
 
-  // Rotation is ONE unified, continuous process for the entire roll — never a separate
-  // "decide the result now" phase, so there's nothing that can read as a late, staged
-  // correction. Every frame does two things to the SAME accumulated `rollQuat`:
-  //  1) Real rolling-without-slipping physics: spin axis perpendicular to the CURRENT
-  //     bounce velocity, magnitude scaled by how far the die actually traveled that
-  //     frame — so it visibly rolls in the direction it's moving, redirecting the
-  //     instant a wall reflects the velocity (the billiard effect). This fades to 0
-  //     like friction over the back stretch of the roll instead of cutting off.
-  //  2) An always-on, imperceptibly small pull toward the secretly pre-decided target,
-  //     recomputed fresh each frame from wherever the physics has ACTUALLY left the die
-  //     and closing a fraction of that gap proportional to dt / time-remaining. Early
-  //     on this is a tiny nudge (plenty of time left); it only grows as the deadline
-  //     approaches, and by construction closes exactly 100% of whatever gap is left on
-  //     the very last frame — guaranteeing an exact landing without ever needing a
-  //     single large, separate corrective spin.
-  var rollQuat = new THREE.Quaternion();
-  var ROLL_RADIUS = 0.55; // smaller = more visible spin per unit of travel
-  var SPIN_ENERGY = 1.6; // extra multiplier over pure rolling-without-slip, for visual energy
-  var PHYS_FADE_START = 0.55; // fraction of the roll where physics starts winding down
-  var PHYS_FADE_END = 0.75; // ...and fraction where it's fully faded, like friction settling
-  var CORR_START = 0.68; // correction's own ramp starts at zero speed too, so a slight
-                          // overlap with the physics fade-out still hands off smoothly
-  var prevCorrEased = 0; // tracks how much of the correction's eased S-curve has been
-                          // applied so far, so each increment closes exactly the right
-                          // slice of whatever gap currently remains (self-correcting,
-                          // but with a proper zero-derivative-at-both-ends deceleration
-                          // instead of a constant-speed cruise + sudden stop)
+  function buildScene(canvas) {
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  // Position is likewise ONE continuous physical simulation for the entire roll, never a
-  // mode switch. The die is a particle bouncing elastically off the walls of the frame,
-  // always pulled toward the center by a spring — the SAME two forces (spring + bounce)
-  // act from the very first frame to the last. What changes smoothly over time is only
-  // how strong the spring/damping are: weak and underdamped at first (so the launch
-  // energy plays out as real, energetic bouncing), ramping to a much stiffer, near-
-  // critically-damped spring for the back stretch (so it settles at dead center quickly
-  // and cleanly). Because the whole roll is decided by a single launch angle + speed
-  // chosen the instant the button is clicked, "where it'll end up" is baked in from the
-  // very first frame — nothing about the trajectory's rules ever changes mid-flight.
-  var BOUNCE_BOUND = 1.3; // world-space half-extent of the frame the die can roam within
-  var SPRING_K_WEAK = 0.4; // gentle pull early on — barely affects the free-flying bounce
-  var SPRING_K_STRONG = 70; // stiff pull for the settle — fast, clean convergence to center
-  var DAMP_WEAK = 0.05; // near-undamped early on, so launch energy plays out as real bounces
-  var DAMP_STRONG = 1.25; // slightly-over-critical damping for the settle — no overshoot/wobble
-  var SPRING_RAMP_START = 0.5; // fraction of the roll where the settle-in begins ramping up
-  var SPRING_RAMP_END = 0.75; // ...fully ramped by here, leaving a long, clean settle tail
-  var BOUNCE_RESTITUTION = 0.92; // slight energy loss per wall hit, like a real bounce
-  var bouncePos = new THREE.Vector2(0, 0);
-  var bounceVel = new THREE.Vector2(0, 0);
-  var lastBounceTime = null;
-  var rollElapsedMs = 0; // accumulated SIMULATED time (sum of the same capped dt used to
-                          // step the physics) — `p` is derived from this, never from raw
-                          // wall-clock elapsed time, so a real stutter (GC pause, a slow
-                          // device, a busy tab) can never let `p` race ahead of what the
-                          // physics has actually simulated. Worst case under a stall, the
-                          // roll just takes a bit longer in real time instead of desyncing
-                          // — which is what caused the sporadic late "jump": the correction
-                          // phase compressing a bigger-than-expected gap into whatever time
-                          // `p` claimed was left.
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(0, 7.6, 5.8);
+    camera.lookAt(0, 0, 0);
 
-  // Each face gets its own inscribed-triangle UV so its dedicated texture renders
-  // centered on that face. Winding matches the geometry's outward CCW order
-  // (verified against attributes.normal) so numerals aren't mirrored.
-  var UV_PATTERN = [0.5, 0.92, 0.08, 0.08, 0.92, 0.08];
-  var UV_CENTROID_V = (UV_PATTERN[1] + UV_PATTERN[3] + UV_PATTERN[5]) / 3;
+    // Luz de tarde en el bosque: clave cálida alta, relleno verde desde abajo.
+    scene.add(new THREE.HemisphereLight(0xfff1d4, 0x51603a, 0.9));
+    var key = new THREE.DirectionalLight(0xffd9a0, 2.0);
+    key.position.set(4, 9, 4);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.camera.left = key.shadow.camera.bottom = -6;
+    key.shadow.camera.right = key.shadow.camera.top = 6;
+    key.shadow.radius = 3;
+    scene.add(key);
+    var rim = new THREE.DirectionalLight(0xc6e493, 0.45);
+    rim.position.set(-5, 3, -4);
+    scene.add(rim);
 
-  // Zero velocity at both ends (no jolt at launch, no snap at the stop), still with a
-  // confident, energetic middle section — smoother than a plain ease-out.
-  function rollEase(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+    // Bandeja de madera: recibe la sombra y da referencia de escala y material.
+    var tray = new THREE.Mesh(
+      new THREE.CircleGeometry(TRAY * 1.2, 64),
+      new THREE.MeshStandardMaterial({ color: 0x6f4f31, roughness: 0.88, metalness: 0 })
+    );
+    tray.rotation.x = -Math.PI / 2;
+    tray.receiveShadow = true;
+    scene.add(tray);
 
-  // Scratch objects reused every frame instead of `new`-ing fresh Vector3/Quaternion
-  // instances 60 times a second during a roll — keeps the animation loop allocation-free
-  // so it can't itself be a source of GC-pause hiccups.
-  var scratchInvQuat = new THREE.Quaternion();
-  var scratchDeltaQuat = new THREE.Quaternion();
-  var scratchRollAxis = new THREE.Vector3();
-  var scratchRotQuat = new THREE.Quaternion();
-  var scratchPlanAxis = new THREE.Vector3();
+    var die = buildDie(RADIUS, renderer.capabilities.getMaxAnisotropy());
+    dieMesh = die.mesh;
+    dieMesh.castShadow = true;
+    faceNormals = die.faceNormals;
+    faceNumbers = die.faceNumbers;
+    scene.add(dieMesh);
+  }
 
-  // Decomposes the rotation from `from` to `to` into a single axis + shortest angle, so
-  // the whole roll can spin around ONE axis and land exactly on target (adding whole
-  // 2*PI turns to that angle never changes where it ends up). Writes the axis into
-  // `outAxis` and returns the angle, instead of allocating a fresh result each call.
-  function computeSpinPlan(from, to, outAxis) {
-    scratchInvQuat.copy(from).invert();
-    scratchDeltaQuat.copy(to).multiply(scratchInvQuat);
-    var delta = scratchDeltaQuat;
-    if (delta.w < 0) { delta.x *= -1; delta.y *= -1; delta.z *= -1; delta.w *= -1; }
-    var w = THREE.MathUtils.clamp(delta.w, -1, 1);
-    var s = Math.sqrt(1 - w * w);
-    if (s < 1e-6) {
-      outAxis.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
-      return 0;
+  // Parámetros calibrados corriendo esta misma simulación 2000 veces sin navegador
+  // (ver scratchpad/phys-test): con estos valores el dado se asienta en ~2.1s de
+  // media, nunca pasa de 3.5s, nunca queda chueco, y la distribución de 1..20 es
+  // pareja (min 86 / max 113 sobre 2000 tiradas, esperado 100). Gravedad más alta
+  // de lo real y bastante amortiguación: sin eso tarda 3.5s de media y aburre.
+  function buildWorld() {
+    world = new CANNON.World({ gravity: new CANNON.Vec3(0, -34, 0) });
+    world.allowSleep = true;
+    world.defaultContactMaterial.friction = 0.35;
+    world.defaultContactMaterial.restitution = 0.2;
+
+    var floor = new CANNON.Body({ mass: 0, shape: new CANNON.Plane() });
+    floor.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    world.addBody(floor);
+
+    // Paredes invisibles: el dado tiene que quedar siempre dentro del encuadre.
+    [[0, 0, -TRAY, 0, 0, 0], [0, 0, TRAY, 0, Math.PI, 0],
+     [-TRAY, 0, 0, 0, Math.PI / 2, 0], [TRAY, 0, 0, 0, -Math.PI / 2, 0]
+    ].forEach(function (w) {
+      var body = new CANNON.Body({ mass: 0, shape: new CANNON.Plane() });
+      body.position.set(w[0], w[1], w[2]);
+      body.quaternion.setFromEuler(w[3], w[4], w[5]);
+      world.addBody(body);
+    });
+
+    // El collider es el mismo icosaedro que se ve, no una esfera aproximada:
+    // es lo que hace que se apoye sobre una cara en vez de rodar sin fin.
+    var geo = new THREE.IcosahedronGeometry(RADIUS, 0);
+    var pos = geo.attributes.position;
+    var unique = [], indices = [], map = {};
+    for (var i = 0; i < pos.count; i++) {
+      var key = [pos.getX(i).toFixed(4), pos.getY(i).toFixed(4), pos.getZ(i).toFixed(4)].join(',');
+      if (!(key in map)) {
+        map[key] = unique.length;
+        unique.push(new CANNON.Vec3(pos.getX(i), pos.getY(i), pos.getZ(i)));
+      }
+      indices.push(map[key]);
     }
-    outAxis.set(delta.x / s, delta.y / s, delta.z / s);
-    return 2 * Math.acos(w);
+    var faces = [];
+    for (var f = 0; f < 20; f++) faces.push([indices[f * 3], indices[f * 3 + 1], indices[f * 3 + 2]]);
+
+    dieBody = new CANNON.Body({
+      mass: 0.35,
+      shape: new CANNON.ConvexPolyhedron({ vertices: unique, faces: faces }),
+      allowSleep: true,
+      sleepSpeedLimit: 0.28,
+      sleepTimeLimit: 0.18,
+      linearDamping: 0.18,
+      angularDamping: 0.3
+    });
+    world.addBody(dieBody);
+    dieBody.addEventListener('sleep', finishRoll);
   }
 
-  function configureTexture(tex, maxAniso) {
-    if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearMipmapLinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.generateMipmaps = true;
-    tex.anisotropy = maxAniso;
-    return tex;
+  function currentQuaternion() {
+    return new THREE.Quaternion(dieBody.quaternion.x, dieBody.quaternion.y, dieBody.quaternion.z, dieBody.quaternion.w);
   }
 
-  // Draws at the actual centroid of the sampled UV triangle (accounting for
-  // CanvasTexture's default flipY), not the canvas's geometric center.
-  function numeralPos(size) {
-    return { x: size * 0.5, y: size * (1 - UV_CENTROID_V) };
+  function finishRoll() {
+    if (!rolling) return;
+    rolling = false;
+    if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
+    var value = readTopFace(faceNormals, faceNumbers, currentQuaternion());
+    if (typeof onSettle === 'function') onSettle(value);
   }
 
-  function makeFaceTexture(n, maxAniso) {
-    var size = 384;
-    var canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    var ctx = canvas.getContext('2d');
+  function frame(now) {
+    rafId = requestAnimationFrame(frame);
+    var dt = lastTime == null ? 1 / 60 : Math.min((now - lastTime) / 1000, 1 / 30);
+    lastTime = now;
 
-    var grad = ctx.createRadialGradient(size * 0.35, size * 0.28, size * 0.1, size * 0.5, size * 0.55, size * 0.78);
-    grad.addColorStop(0, '#453768');
-    grad.addColorStop(0.55, '#291f3c');
-    grad.addColorStop(1, '#140f1e');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size, size);
-
-    var pos = numeralPos(size);
-    ctx.font = '700 ' + Math.round(size * 0.24) + 'px "EB Garamond", Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(String(n), pos.x, pos.y);
-
-    return configureTexture(new THREE.CanvasTexture(canvas), maxAniso);
-  }
-
-  // Numeral-only, white on black, used as an emissive map so the number glows
-  // with its own light and stays crisp regardless of how the face is lit.
-  function makeEmissiveTexture(n, maxAniso) {
-    var size = 384;
-    var canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    var ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, size, size);
-
-    var pos = numeralPos(size);
-    ctx.font = '700 ' + Math.round(size * 0.24) + 'px "EB Garamond", Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(String(n), pos.x, pos.y);
-
-    return configureTexture(new THREE.CanvasTexture(canvas), maxAniso);
-  }
-
-  function buildNumberedGeometry() {
-    var geometry = new THREE.IcosahedronGeometry(RADIUS, 0);
-    var uvPattern = UV_PATTERN;
-    var uvArray = new Float32Array(60 * 2);
-    for (var f = 0; f < 20; f++) {
-      uvArray.set(uvPattern, f * 6);
-      geometry.addGroup(f * 3, 3, f);
+    if (world) world.step(1 / 60, dt, 4);
+    if (dieMesh && dieBody) {
+      dieMesh.position.set(dieBody.position.x, dieBody.position.y, dieBody.position.z);
+      dieMesh.quaternion.set(dieBody.quaternion.x, dieBody.quaternion.y, dieBody.quaternion.z, dieBody.quaternion.w);
     }
-    geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
-    return geometry;
+    if (renderer) renderer.render(scene, camera);
   }
 
-  function cacheFaceOrientations(geometry) {
-    var pos = geometry.attributes.position;
-    var vec = function (i) { return new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)); };
-    for (var f = 0; f < 20; f++) {
-      var i0 = f * 3, i1 = f * 3 + 1, i2 = f * 3 + 2;
-      var v0 = vec(i0), v1 = vec(i1), v2 = vec(i2);
-      var normal = new THREE.Vector3().subVectors(v1, v0).cross(new THREE.Vector3().subVectors(v2, v0)).normalize();
-      var centroid = new THREE.Vector3().add(v0).add(v1).add(v2).multiplyScalar(1 / 3);
-      // "up" reference = direction from centroid to vertex0 (the UV-top corner), flattened against the normal
-      var up = new THREE.Vector3().subVectors(v0, centroid);
-      up.addScaledVector(normal, -up.dot(normal)).normalize();
-      faceNormals.push(normal);
-      faceUps.push(up);
-    }
+  function resize() {
+    if (!renderer) return;
+    var el = renderer.domElement;
+    var w = el.clientWidth || 320, h = el.clientHeight || 320;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
   }
 
-  // Orientation that puts face `faceIndex`'s normal toward the camera (+Z) with its
-  // baked numeral roughly upright (its "up" reference aligned to world +Y).
-  function computeFaceQuaternion(faceIndex) {
-    var normal = faceNormals[faceIndex];
-    var up = faceUps[faceIndex];
-    var q1 = new THREE.Quaternion().setFromUnitVectors(normal, new THREE.Vector3(0, 0, 1));
-    var rotatedUp = up.clone().applyQuaternion(q1);
-    var angle = Math.atan2(rotatedUp.x, rotatedUp.y);
-    var q2 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle);
-    return new THREE.Quaternion().multiplyQuaternions(q2, q1);
+  // Deja el dado apoyado y quieto en el centro.
+  function restDie() {
+    dieBody.position.set(0, RADIUS * 0.92, 0);
+    dieBody.velocity.setZero();
+    dieBody.angularVelocity.setZero();
+    dieBody.quaternion.setFromEuler(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+    dieBody.sleep();
   }
+
+  var ready = false;
 
   function init(canvas) {
     if (!canvas) return false;
-    dieContainer = canvas.parentElement;
-    try {
-      renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-    } catch (e) {
-      return false;
-    }
-    if (!renderer) return false;
-
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setSize(SIZE, SIZE, false);
-
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
-    camera.position.set(0, 0, CAMERA_DISTANCE);
-
-    scene.add(new THREE.AmbientLight(0x2a2140, 1.15));
-    var key = new THREE.DirectionalLight(0xffffff, 1.5);
-    key.position.set(2, 3, 4);
-    scene.add(key);
-    var rim = new THREE.PointLight(0xb79bff, 2.4, 14);
-    rim.position.set(-3, -1.4, 2.2);
-    scene.add(rim);
-    var back = new THREE.PointLight(0x8c6fe0, 1.6, 14);
-    back.position.set(0.5, -2.2, -3);
-    scene.add(back);
-
-    var geometry = buildNumberedGeometry();
-    cacheFaceOrientations(geometry);
-
-    var maxAniso = renderer.capabilities.getMaxAnisotropy();
-    var materials = [];
-    for (var n = 1; n <= 20; n++) {
-      materials.push(new THREE.MeshPhysicalMaterial({
-        map: makeFaceTexture(n, maxAniso),
-        emissiveMap: makeEmissiveTexture(n, maxAniso),
-        emissive: new THREE.Color(0xffffff),
-        emissiveIntensity: 0.55,
-        metalness: 0.32,
-        roughness: 0.3,
-        clearcoat: 0.6,
-        clearcoatRoughness: 0.25,
-        reflectivity: 0.5
-      }));
-    }
-    var mesh = new THREE.Mesh(geometry, materials);
-
-    var edgesGeom = new THREE.EdgesGeometry(geometry);
-    var edgesMat = new THREE.LineBasicMaterial({ color: 0xcfd2e0, transparent: true, opacity: 0.55 });
-    var edges = new THREE.LineSegments(edgesGeom, edgesMat);
-
-    dieGroup = new THREE.Group();
-    dieGroup.add(mesh);
-    dieGroup.add(edges);
-    dieGroup.quaternion.copy(computeFaceQuaternion(19)); // rest on "20" before the first roll
-    scene.add(dieGroup);
-
-    requestAnimationFrame(animate);
+    reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Los numerales se graban en canvas con Marcellus: si la tipografía todavía
+    // no cargó, las caras saldrían con la fuente de respaldo y quedarían así
+    // para siempre. Esperamos a que esté antes de construir el dado.
+    var fonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+    fonts.then(function () {
+      try {
+        buildScene(canvas);
+        buildWorld();
+        resize();
+        window.addEventListener('resize', resize, { passive: true });
+        restDie();
+        rafId = requestAnimationFrame(frame);
+        ready = true;
+      } catch (err) {
+        console.warn('[wd3d] no se pudo iniciar el dado 3D:', err);
+      }
+    });
     return true;
   }
 
-  function startRoll(resultNumber) {
-    if (!renderer || !dieGroup) return;
-    pendingResultNumber = Math.max(1, Math.min(20, resultNumber || 20));
-    var faceIndex = pendingResultNumber - 1;
-    rollTargetQuat.copy(computeFaceQuaternion(faceIndex));
+  // Tira el dado de verdad: posición y fuerzas al azar, y que la física decida.
+  function roll(callback) {
+    if (!ready || !world || rolling) return false;
+    onSettle = callback;
 
-    rollQuat.copy(dieGroup.quaternion);
-
-    if (dieContainer) {
-      dieContainer.classList.remove('is-nat20', 'is-nat1');
-      if (flourishTimeout) { clearTimeout(flourishTimeout); flourishTimeout = null; }
+    if (reduce) {
+      // Sin movimiento: se resuelve al instante y se muestra la cara resultante.
+      restDie();
+      var value = readTopFace(faceNormals, faceNumbers, currentQuaternion());
+      if (typeof callback === 'function') setTimeout(function () { callback(value); }, 120);
+      return true;
     }
-
-    var launchAngle = Math.random() * Math.PI * 2;
-    var launchSpeed = 3.2 + Math.random() * 1.3;
-    bouncePos.set(0, 0);
-    bounceVel.set(Math.cos(launchAngle) * launchSpeed, Math.sin(launchAngle) * launchSpeed);
-    lastBounceTime = null;
-    prevCorrEased = 0;
-    rollElapsedMs = 0;
 
     rolling = true;
+    dieBody.wakeUp();
+    var angle = Math.random() * Math.PI * 2;
+    dieBody.position.set(Math.cos(angle) * TRAY * 0.55, 4.6 + Math.random() * 1.2, Math.sin(angle) * TRAY * 0.55);
+    dieBody.quaternion.setFromEuler(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
+    dieBody.velocity.set(-Math.cos(angle) * (5 + Math.random() * 3), 1 + Math.random(), -Math.sin(angle) * (5 + Math.random() * 3));
+    dieBody.angularVelocity.set((Math.random() - 0.5) * 26, (Math.random() - 0.5) * 26, (Math.random() - 0.5) * 26);
+
+    settleTimer = setTimeout(function () {
+      // Red de seguridad: si quedó trabado contra un borde, se frena y se lee.
+      dieBody.velocity.scale(0.1, dieBody.velocity);
+      dieBody.angularVelocity.scale(0.1, dieBody.angularVelocity);
+      finishRoll();
+    }, SETTLE_TIMEOUT);
+    return true;
   }
 
-  function animate(now) {
-    requestAnimationFrame(animate);
-    if (!renderer || !dieGroup) return;
-
-    if (rolling) {
-      var dt = lastBounceTime === null ? 0.016 : Math.min((now - lastBounceTime) / 1000, 0.032);
-      lastBounceTime = now;
-      rollElapsedMs += dt * 1000;
-      var p = Math.min(rollElapsedMs / ROLL_DURATION, 1);
-
-      // --- Position: one continuous spring-in-a-box simulation for the whole roll.
-      // Same two forces (inward spring + elastic wall bounce) the entire time; only
-      // their strength ramps smoothly from "barely there" (real, chaotic bouncing) to
-      // "fast and clean" (settles exactly at center) — never a mode switch.
-      var springLocalP = Math.min(Math.max((p - SPRING_RAMP_START) / (SPRING_RAMP_END - SPRING_RAMP_START), 0), 1);
-      var springEase = rollEase(springLocalP);
-      var springK = SPRING_K_WEAK + (SPRING_K_STRONG - SPRING_K_WEAK) * springEase;
-      var dampMult = DAMP_WEAK + (DAMP_STRONG - DAMP_WEAK) * springEase;
-      var dampPerSec = Math.exp(-2 * Math.sqrt(springK) * dampMult);
-
-      bounceVel.x += -springK * bouncePos.x * dt;
-      bounceVel.y += -springK * bouncePos.y * dt;
-      var dampFactor = Math.pow(dampPerSec, dt);
-      bounceVel.x *= dampFactor;
-      bounceVel.y *= dampFactor;
-      bouncePos.x += bounceVel.x * dt;
-      bouncePos.y += bounceVel.y * dt;
-      if (bouncePos.x > BOUNCE_BOUND) { bouncePos.x = BOUNCE_BOUND; bounceVel.x = -Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
-      else if (bouncePos.x < -BOUNCE_BOUND) { bouncePos.x = -BOUNCE_BOUND; bounceVel.x = Math.abs(bounceVel.x) * BOUNCE_RESTITUTION; }
-      if (bouncePos.y > BOUNCE_BOUND) { bouncePos.y = BOUNCE_BOUND; bounceVel.y = -Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
-      else if (bouncePos.y < -BOUNCE_BOUND) { bouncePos.y = -BOUNCE_BOUND; bounceVel.y = Math.abs(bounceVel.y) * BOUNCE_RESTITUTION; }
-      dieGroup.position.x = bouncePos.x;
-      dieGroup.position.y = bouncePos.y;
-
-      // --- Rotation: physics the whole time (never a separate "decide now" phase) ---
-      var speed = bounceVel.length();
-      if (speed > 1e-4) {
-        var physFade = p < PHYS_FADE_START ? 1 : (p > PHYS_FADE_END ? 0 : rollEase(1 - (p - PHYS_FADE_START) / (PHYS_FADE_END - PHYS_FADE_START)));
-        if (physFade > 0) {
-          scratchRollAxis.set(-bounceVel.y, bounceVel.x, 0).normalize();
-          var dAngle = (speed * dt / ROLL_RADIUS) * SPIN_ENERGY * physFade;
-          scratchRotQuat.setFromAxisAngle(scratchRollAxis, dAngle);
-          rollQuat.premultiply(scratchRotQuat);
-        }
-      }
-      // Gap-closing pull: only switches on once physics has fully settled (so the two
-      // never compete over the axis at the same moment), then follows a proper eased
-      // S-curve — zero speed at the start (an imperceptible handoff right as the tumble
-      // stops) and zero speed at the end (an exact, gentle stop on the real result).
-      // Recomputed fresh from wherever the die actually is each frame, so it's still
-      // self-correcting; only the fraction-of-remaining-gap it closes each step follows
-      // the eased curve instead of a raw proportional (constant-speed) closing rate.
-      if (p > CORR_START) {
-        var localP = Math.min((p - CORR_START) / (1 - CORR_START), 1);
-        var eased = rollEase(localP);
-        var stepFrac = (eased - prevCorrEased) / Math.max(1 - prevCorrEased, 1e-6);
-        stepFrac = Math.min(Math.max(stepFrac, 0), 1);
-        prevCorrEased = eased;
-        if (stepFrac > 0) {
-          var planAngle = computeSpinPlan(rollQuat, rollTargetQuat, scratchPlanAxis);
-          if (planAngle > 1e-6) {
-            scratchRotQuat.setFromAxisAngle(scratchPlanAxis, planAngle * stepFrac);
-            rollQuat.premultiply(scratchRotQuat);
-          }
-        }
-      }
-      dieGroup.quaternion.copy(rollQuat);
-
-      if (p >= 1) {
-        rolling = false;
-        rollQuat.copy(rollTargetQuat); // hard snap eliminates any residual float drift
-        dieGroup.quaternion.copy(rollQuat);
-        dieGroup.position.x = 0;
-        dieGroup.position.y = 0;
-
-        if (dieContainer && (pendingResultNumber === 20 || pendingResultNumber === 1)) {
-          var flourishClass = pendingResultNumber === 20 ? 'is-nat20' : 'is-nat1';
-          dieContainer.classList.add(flourishClass);
-          flourishTimeout = setTimeout(function () { dieContainer.classList.remove(flourishClass); }, 1300);
-        }
-      }
-    }
-    // resting: hold the landed orientation exactly, no idle drift once a result has landed
-    renderer.render(scene, camera);
-  }
-
-  window.WD3D = { init: init, startRoll: startRoll, ROLL_DURATION: ROLL_DURATION };
+  global.WD3D = { init: init, roll: roll, isRolling: function () { return rolling; } };
   window.dispatchEvent(new Event('wd3d-ready'));
-})();
+})(window);

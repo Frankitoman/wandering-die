@@ -12,3 +12,4 @@ gen_run.log
 .env
 scrollcraft/
 lab/
+.claude/

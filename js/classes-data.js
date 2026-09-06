@@ -1,4 +1,4 @@
-// The Wandering Die — D&D class definitions (icons, images, i18n content)
+// The Wandering Die — las doce clases de D&D 5e, con ficha de combate.
 (function (global) {
   'use strict';
 
@@ -18,78 +18,162 @@
   };
 
   var CLASSES = [
-    { id: 'barbarian', icon: ICONS.barbarian, image: 'assets/images/classes/barbarian.jpg',
-      i18n: {
-        en: { name: 'Barbarian', tagline: 'Fury given form', desc: 'You channel raw rage into unstoppable strength, tearing through anything that stands between you and victory.', traits: ['Reckless', 'Powerful', 'Instinctive', 'Unbreakable'] },
-        es: { name: 'Bárbaro/a', tagline: 'La furia hecha forma', desc: 'Canalizás una rabia primitiva en una fuerza imparable, arrasando con todo lo que se interponga en tu camino.', traits: ['Temerario', 'Poderoso', 'Instintivo', 'Inquebrantable'] },
-        da: { name: 'Barbarian', tagline: 'Raseri i skikkelse', desc: 'Du kanaliserer rå vrede til ustoppelig styrke og braser gennem alt, der står mellem dig og sejr.', traits: ['Vovet', 'Mægtig', 'Instinktiv', 'Ubrydelig'] }
-      } },
-    { id: 'bard', icon: ICONS.bard, image: 'assets/images/classes/bard.jpg',
-      i18n: {
-        en: { name: 'Bard', tagline: 'Magic woven in song', desc: 'Your words and music bend reality itself — you inspire allies, unravel enemies, and turn every room into your stage.', traits: ['Charismatic', 'Versatile', 'Witty', 'Inspiring'] },
-        es: { name: 'Bardo/a', tagline: 'Magia tejida en canción', desc: 'Tus palabras y tu música doblan la realidad: inspirás aliados, desarmás enemigos y convertís cada sala en tu escenario.', traits: ['Carismático', 'Versátil', 'Ingenioso', 'Inspirador'] },
-        da: { name: 'Bard', tagline: 'Magi vævet i sang', desc: 'Dine ord og din musik bøjer selve virkeligheden — du inspirerer allierede, afvæbner fjender og gør ethvert rum til din scene.', traits: ['Karismatisk', 'Alsidig', 'Vittig', 'Inspirerende'] }
-      } },
-    { id: 'cleric', icon: ICONS.cleric, image: 'assets/images/classes/cleric.jpg',
-      i18n: {
-        en: { name: 'Cleric', tagline: 'The divine made manifest', desc: "A god's power flows through you — you heal the broken, smite the wicked, and carry faith like a shield.", traits: ['Devout', 'Resilient', 'Protective', 'Wise'] },
-        es: { name: 'Clérigo/a', tagline: 'Lo divino hecho carne', desc: 'El poder de un dios fluye a través tuyo: curás lo roto, castigás a los malvados y llevás la fe como escudo.', traits: ['Devoto', 'Resiliente', 'Protector', 'Sabio'] },
-        da: { name: 'Cleric', tagline: 'Det guddommelige manifesteret', desc: 'En guds kraft strømmer igennem dig — du helbreder de sårede, straffer de onde og bærer troen som et skjold.', traits: ['Fromme', 'Robust', 'Beskyttende', 'Vís'] }
-      } },
-    { id: 'druid', icon: ICONS.druid, image: 'assets/images/classes/druid.jpg',
-      i18n: {
-        en: { name: 'Druid', tagline: "Nature's shifting will", desc: 'You speak the old language of root and storm, shifting shape and calling on the wild to fight at your side.', traits: ['Primal', 'Adaptive', 'Protective', 'Untamed'] },
-        es: { name: 'Druida', tagline: 'La voluntad cambiante de la naturaleza', desc: 'Hablás el idioma antiguo de la raíz y la tormenta, cambiás de forma y llamás a lo salvaje para que pelee a tu lado.', traits: ['Primal', 'Adaptable', 'Protector', 'Indomable'] },
-        da: { name: 'Druid', tagline: 'Naturens skiftende vilje', desc: 'Du taler rodens og stormens gamle sprog, skifter skikkelse og kalder det vilde til kamp ved din side.', traits: ['Primal', 'Tilpasningsdygtig', 'Beskyttende', 'Utæmmet'] }
-      } },
-    { id: 'fighter', icon: ICONS.fighter, image: 'assets/images/classes/fighter.jpg',
-      i18n: {
-        en: { name: 'Fighter', tagline: 'Steel, discipline, victory', desc: 'Trained to master any weapon and outlast any foe, you turn preparation and grit into battlefield dominance.', traits: ['Disciplined', 'Relentless', 'Tactical', 'Steadfast'] },
-        es: { name: 'Guerrero/a', tagline: 'Acero, disciplina, victoria', desc: 'Entrenado/a para dominar cualquier arma y resistir a cualquier rival, convertís la preparación y el coraje en dominio del campo de batalla.', traits: ['Disciplinado', 'Incansable', 'Táctico', 'Firme'] },
-        da: { name: 'Fighter', tagline: 'Stål, disciplin, sejr', desc: 'Trænet i at mestre ethvert våben og overleve enhver fjende, forvandler du forberedelse og vilje til herredømme på slagmarken.', traits: ['Disciplineret', 'Ustandselig', 'Taktisk', 'Standhaftig'] }
-      } },
-    { id: 'monk', icon: ICONS.monk, image: 'assets/images/classes/monk.jpg',
-      i18n: {
-        en: { name: 'Monk', tagline: 'Body as weapon, mind as shield', desc: "Through relentless discipline you've turned your own body into a weapon and your spirit into an unshakable calm.", traits: ['Disciplined', 'Swift', 'Focused', 'Serene'] },
-        es: { name: 'Monje', tagline: 'El cuerpo como arma, la mente como escudo', desc: 'Con disciplina implacable convertiste tu propio cuerpo en un arma y tu espíritu en una calma inquebrantable.', traits: ['Disciplinado', 'Veloz', 'Concentrado', 'Sereno'] },
-        da: { name: 'Monk', tagline: 'Kroppen som våben, sindet som skjold', desc: 'Gennem ubønhørlig disciplin har du gjort din egen krop til et våben og dit sind til uforstyrrelig ro.', traits: ['Disciplineret', 'Hurtig', 'Fokuseret', 'Rolig'] }
-      } },
-    { id: 'paladin', icon: ICONS.paladin, image: 'assets/images/classes/paladin.jpg',
-      i18n: {
-        en: { name: 'Paladin', tagline: 'An oath that cannot break', desc: 'Bound by a sacred vow, you stand as a living shield for the innocent — your conviction is as sharp as your blade.', traits: ['Honorable', 'Devoted', 'Fearless', 'Just'] },
-        es: { name: 'Paladín', tagline: 'Un juramento inquebrantable', desc: 'Atado/a a un voto sagrado, sos un escudo viviente para los inocentes: tu convicción es tan filosa como tu espada.', traits: ['Honorable', 'Devoto', 'Intrépido', 'Justo'] },
-        da: { name: 'Paladin', tagline: 'En ed, der ikke kan brydes', desc: 'Bundet af et helligt løfte står du som et levende skjold for de uskyldige — din overbevisning er lige så skarp som dit sværd.', traits: ['Ærefuld', 'Hengiven', 'Frygtløs', 'Retfærdig'] }
-      } },
-    { id: 'ranger', icon: ICONS.ranger, image: 'assets/images/classes/ranger.jpg',
-      i18n: {
-        en: { name: 'Ranger', tagline: "The wild's silent guardian", desc: 'Half hunter, half wanderer, you read the land like a map and strike from the shadows the forest gives you.', traits: ['Perceptive', 'Independent', 'Precise', 'Resourceful'] },
-        es: { name: 'Explorador/a', tagline: 'El guardián silencioso de lo salvaje', desc: 'Mitad cazador, mitad viajero, leés el terreno como un mapa y golpeás desde las sombras que el bosque te regala.', traits: ['Perceptivo', 'Independiente', 'Preciso', 'Ingenioso'] },
-        da: { name: 'Ranger', tagline: 'Vildmarkens tavse vogter', desc: 'Halvt jæger, halvt vandrer, læser du landskabet som et kort og slår til fra skyggerne, skoven giver dig.', traits: ['Opmærksom', 'Uafhængig', 'Præcis', 'Opfindsom'] }
-      } },
-    { id: 'rogue', icon: ICONS.rogue, image: 'assets/images/classes/rogue.jpg',
-      i18n: {
-        en: { name: 'Rogue', tagline: 'One step ahead, always', desc: 'Quick hands, quicker wit — you find the gap in every plan and the exit in every trap.', traits: ['Cunning', 'Agile', 'Independent', 'Opportunistic'] },
-        es: { name: 'Pícaro/a', tagline: 'Siempre un paso adelante', desc: 'Manos rápidas, mente más rápida todavía: encontrás la grieta en cada plan y la salida en cada trampa.', traits: ['Astuto', 'Ágil', 'Independiente', 'Oportunista'] },
-        da: { name: 'Rogue', tagline: 'Altid et skridt foran', desc: 'Hurtige hænder, hurtigere kvikt hoved — du finder hullet i enhver plan og udgangen i enhver fælde.', traits: ['Snu', 'Adræt', 'Uafhængig', 'Opportunistisk'] }
-      } },
-    { id: 'sorcerer', icon: ICONS.sorcerer, image: 'assets/images/classes/sorcerer.jpg',
-      i18n: {
-        en: { name: 'Sorcerer', tagline: 'Magic in the blood', desc: 'Power was never taught to you — it was born in you, wild and unpredictable, waiting to be unleashed.', traits: ['Innate', 'Passionate', 'Unpredictable', 'Bold'] },
-        es: { name: 'Hechicero/a', tagline: 'Magia en la sangre', desc: 'El poder nunca te lo enseñaron: nació en vos, salvaje e impredecible, esperando ser liberado.', traits: ['Innato', 'Apasionado', 'Impredecible', 'Audaz'] },
-        da: { name: 'Sorcerer', tagline: 'Magi i blodet', desc: 'Kraften blev aldrig lært dig — den blev født i dig, vild og uforudsigelig, ventende på at blive sluppet løs.', traits: ['Medfødt', 'Lidenskabelig', 'Uforudsigelig', 'Dristig'] }
-      } },
-    { id: 'warlock', icon: ICONS.warlock, image: 'assets/images/classes/warlock.jpg',
-      i18n: {
-        en: { name: 'Warlock', tagline: 'Power bought, not earned', desc: 'You struck a bargain with something vast and unknowable — its power is yours, but so is its price.', traits: ['Cunning', 'Bound', 'Ambitious', 'Otherworldly'] },
-        es: { name: 'Brujo/a', tagline: 'Poder comprado, no ganado', desc: 'Hiciste un pacto con algo vasto e incognoscible: su poder es tuyo, pero también lo es su precio.', traits: ['Astuto', 'Atado', 'Ambicioso', 'Sobrenatural'] },
-        da: { name: 'Warlock', tagline: 'Magt der er købt, ikke tjent', desc: 'Du indgik en pagt med noget umådeligt og ukendeligt — dets kraft er din, men det er prisen også.', traits: ['Snu', 'Bundet', 'Ambitiøs', 'Overjordisk'] }
-      } },
-    { id: 'wizard', icon: ICONS.wizard, image: 'assets/images/classes/wizard.jpg',
-      i18n: {
-        en: { name: 'Wizard', tagline: 'Knowledge is the ultimate weapon', desc: "Years buried in ancient tomes have given you mastery over reality's rules — and how to bend every one of them.", traits: ['Studious', 'Precise', 'Strategic', 'Curious'] },
-        es: { name: 'Mago/a', tagline: 'El conocimiento es el arma definitiva', desc: 'Años enterrado/a en tomos antiguos te dieron dominio sobre las reglas de la realidad, y sabés exactamente cómo doblarlas.', traits: ['Estudioso', 'Preciso', 'Estratégico', 'Curioso'] },
-        da: { name: 'Wizard', tagline: 'Viden er det ultimative våben', desc: 'År begravet i gamle bind har givet dig herredømme over virkelighedens regler — og hvordan man bøjer hver eneste af dem.', traits: ['Studerende', 'Præcis', 'Strategisk', 'Nysgerrig'] }
-      } }
+    {
+      id: 'barbarian', icon: ICONS.barbarian, image: 'assets/images/classes/barbarian.webp',
+      name: 'Bárbaro', tagline: 'La furia hecha forma',
+      desc: 'Entrás en una furia que te vuelve más difícil de matar y más difícil de frenar. No planeás la pelea: la atravesás. Mientras el resto busca el ángulo, vos ya estás encima.',
+      rol: 'Tanque de primera línea',
+      ataque: 'Cuerpo a cuerpo, golpes pesados',
+      magia: 'Ninguna',
+      alcance: 'Corto — pegado al enemigo',
+      armas: 'Hacha a dos manos, gran espada, martillo',
+      armadura: 'Ligera o ninguna; aguanta a puro cuero',
+      dado: 'd12 — el más alto del juego',
+      traits: ['Temerario', 'Resistente', 'Instintivo', 'Imparable']
+    },
+    {
+      id: 'bard', icon: ICONS.bard, image: 'assets/images/classes/bard.webp',
+      name: 'Bardo', tagline: 'Magia tejida en canción',
+      desc: 'Tu magia sale de la actuación: una palabra justa, una melodía, una mentira bien contada. Inspirás a los tuyos, desarmás a los otros y casi siempre encontrás una salida que no requiere pelear.',
+      rol: 'Apoyo y control social',
+      ataque: 'Hechizos y conjuros de apoyo',
+      magia: 'Sí — arcana, por carisma',
+      alcance: 'Medio a largo',
+      armas: 'Estoque, daga, ballesta ligera',
+      armadura: 'Ligera',
+      dado: 'd8',
+      traits: ['Carismático', 'Versátil', 'Ingenioso', 'Inspirador']
+    },
+    {
+      id: 'cleric', icon: ICONS.cleric, image: 'assets/images/classes/cleric.webp',
+      name: 'Clérigo', tagline: 'Lo divino hecho carne',
+      desc: 'Canalizás el poder de una deidad. Curás heridas que deberían ser mortales, sostenés al grupo cuando todo se cae, y cuando hace falta pegás con el peso de algo mucho más grande que vos.',
+      rol: 'Sanador y sostén del grupo',
+      ataque: 'Mixto — hechizos y arma contundente',
+      magia: 'Sí — divina, por sabiduría',
+      alcance: 'Medio',
+      armas: 'Maza, martillo de guerra, escudo',
+      armadura: 'Media o pesada, según el dominio',
+      dado: 'd8',
+      traits: ['Devoto', 'Protector', 'Sereno', 'Firme']
+    },
+    {
+      id: 'druid', icon: ICONS.druid, image: 'assets/images/classes/druid.webp',
+      name: 'Druida', tagline: 'La voluntad cambiante de la naturaleza',
+      desc: 'Hablás el idioma del mundo salvaje y él te responde. Te transformás en bestia, llamás a la tormenta, hacés crecer raíces donde había piedra. Tu poder no es tuyo: se lo pedís prestado al bosque.',
+      rol: 'Versátil — control, sanación y forma salvaje',
+      ataque: 'Hechizos elementales y forma salvaje',
+      magia: 'Sí — natural, por sabiduría',
+      alcance: 'Medio a largo',
+      armas: 'Bastón, hoz, cimitarra',
+      armadura: 'Ligera o media, nunca de metal',
+      dado: 'd8',
+      traits: ['Salvaje', 'Adaptable', 'Paciente', 'Impredecible']
+    },
+    {
+      id: 'fighter', icon: ICONS.fighter, image: 'assets/images/classes/fighter.webp',
+      name: 'Guerrero', tagline: 'Acero, disciplina, victoria',
+      desc: 'No tenés magia ni pactos ni dioses: tenés oficio. Sabés más de armas y de armaduras que nadie en la mesa, atacás más veces por turno que cualquiera, y estás de pie cuando todos los demás ya no.',
+      rol: 'Combatiente puro, primera o segunda línea',
+      ataque: 'Cuerpo a cuerpo o a distancia — el que elijas',
+      magia: 'Ninguna (salvo el arquetipo Caballero Arcano)',
+      alcance: 'Corto o largo, según el estilo',
+      armas: 'Todas. Espada y escudo, gran espada, arco largo',
+      armadura: 'Pesada — la mejor que consigas',
+      dado: 'd10',
+      traits: ['Disciplinado', 'Preciso', 'Confiable', 'Incansable']
+    },
+    {
+      id: 'monk', icon: ICONS.monk, image: 'assets/images/classes/monk.webp',
+      name: 'Monje', tagline: 'El cuerpo como arma, la mente como escudo',
+      desc: 'Convertiste tu cuerpo en el arma. Golpeás varias veces en el tiempo que otro tarda en levantar la espada, corrés por paredes, caés sin romperte y desviás flechas con la mano abierta.',
+      rol: 'Escaramuzador veloz',
+      ataque: 'Ráfagas de golpes desarmados',
+      magia: 'No — ki, energía interior',
+      alcance: 'Corto, con movilidad enorme',
+      armas: 'Manos, bastón, dardos, nunchakus',
+      armadura: 'Ninguna — la esquiva es la armadura',
+      dado: 'd8',
+      traits: ['Ágil', 'Concentrado', 'Veloz', 'Autosuficiente']
+    },
+    {
+      id: 'paladin', icon: ICONS.paladin, image: 'assets/images/classes/paladin.webp',
+      name: 'Paladín', tagline: 'Un juramento inquebrantable',
+      desc: 'Hiciste un juramento y ese juramento te da poder. Pegás con castigo divino, curás con las manos, y tu sola presencia hace que a los que están cerca les cueste menos ser valientes.',
+      rol: 'Tanque con daño explosivo y aura de apoyo',
+      ataque: 'Cuerpo a cuerpo con castigo divino',
+      magia: 'Sí — divina, por carisma',
+      alcance: 'Corto',
+      armas: 'Espada larga, martillo, escudo',
+      armadura: 'Pesada',
+      dado: 'd10',
+      traits: ['Justo', 'Valiente', 'Leal', 'Imponente']
+    },
+    {
+      id: 'ranger', icon: ICONS.ranger, image: 'assets/images/classes/ranger.webp',
+      name: 'Explorador', tagline: 'El guardián silencioso de lo salvaje',
+      desc: 'Conocés el terreno mejor que quien vive en él. Rastreás, emboscás, disparás desde donde nadie te ve, y tenés un vínculo con lo salvaje que la gente de ciudad nunca va a entender del todo.',
+      rol: 'Daño a distancia y exploración',
+      ataque: 'A distancia, con arco',
+      magia: 'Sí — natural, poca y práctica',
+      alcance: 'Largo',
+      armas: 'Arco largo, dos espadas cortas',
+      armadura: 'Media',
+      dado: 'd10',
+      traits: ['Observador', 'Autónomo', 'Certero', 'Silencioso']
+    },
+    {
+      id: 'rogue', icon: ICONS.rogue, image: 'assets/images/classes/rogue.webp',
+      name: 'Pícaro', tagline: 'Siempre un paso adelante',
+      desc: 'No ganás por fuerza: ganás porque llegaste antes y sabías algo que el otro no. Un solo golpe bien puesto hace más daño que tres mal puestos, y la mitad de los problemas los resolvés sin que nadie sepa que estuviste ahí.',
+      rol: 'Daño concentrado y utilidad fuera del combate',
+      ataque: 'Ataque furtivo — un golpe, mucho daño',
+      magia: 'Ninguna (salvo el arquetipo Embaucador Arcano)',
+      alcance: 'Corto o medio',
+      armas: 'Dagas, espada corta, ballesta de mano',
+      armadura: 'Ligera',
+      dado: 'd8',
+      traits: ['Astuto', 'Rápido', 'Oportunista', 'Escurridizo']
+    },
+    {
+      id: 'sorcerer', icon: ICONS.sorcerer, image: 'assets/images/classes/sorcerer.webp',
+      name: 'Hechicero', tagline: 'Magia en la sangre',
+      desc: 'No estudiaste para esto: naciste así. La magia te sale de adentro y podés torcerla sobre la marcha — acelerarla, duplicarla, lanzarla en silencio. Menos hechizos que un mago, pero mucho más control sobre cada uno.',
+      rol: 'Daño mágico y flexibilidad',
+      ataque: 'Hechizos ofensivos, mucho daño de área',
+      magia: 'Sí — arcana innata, por carisma',
+      alcance: 'Largo',
+      armas: 'Daga, bastón (casi decorativos)',
+      armadura: 'Ninguna',
+      dado: 'd6 — el más frágil del juego',
+      traits: ['Intenso', 'Innato', 'Explosivo', 'Indomable']
+    },
+    {
+      id: 'warlock', icon: ICONS.warlock, image: 'assets/images/classes/warlock.webp',
+      name: 'Brujo', tagline: 'Poder comprado, no ganado',
+      desc: 'Hiciste un pacto con algo viejo y poderoso, y ese algo te presta poder a cambio de cosas que preferís no detallar. Pocos hechizos, pero siempre cargados al máximo y recuperados con un descanso corto.',
+      rol: 'Daño sostenido con magia de pacto',
+      ataque: 'Descarga sobrenatural, a distancia',
+      magia: 'Sí — de pacto, por carisma',
+      alcance: 'Largo',
+      armas: 'Daga, o la que otorgue el pacto',
+      armadura: 'Ligera',
+      dado: 'd8',
+      traits: ['Ambicioso', 'Misterioso', 'Pragmático', 'Comprometido']
+    },
+    {
+      id: 'wizard', icon: ICONS.wizard, image: 'assets/images/classes/wizard.webp',
+      name: 'Mago', tagline: 'El conocimiento es el arma definitiva',
+      desc: 'Todo lo que podés hacer lo aprendiste, lo anotaste y lo podés volver a hacer. Tenés un hechizo para cada problema y el problema es elegir cuál. Frágil como el papel, decisivo como nadie.',
+      rol: 'Control del campo de batalla y daño de área',
+      ataque: 'Hechizos preparados, gran variedad',
+      magia: 'Sí — arcana estudiada, por inteligencia',
+      alcance: 'Largo',
+      armas: 'Bastón, daga (rara vez los usa)',
+      armadura: 'Ninguna',
+      dado: 'd6 — el más frágil del juego',
+      traits: ['Metódico', 'Curioso', 'Preparado', 'Decisivo']
+    }
   ];
 
   global.WD_CLASSES = CLASSES;
