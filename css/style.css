@@ -140,14 +140,18 @@ body.is-locked { overflow: hidden; }
 
 .hero__media {
   position: relative;
-  background: url('../assets/images/bg/hero.webp') center / cover no-repeat;
+  /* El panel es angosto y alto: de la foto apaisada solo entra un 43%. Con
+     `center` esa ventana caía sobre la zona más oscura (brillo medio 81) y el
+     panel quedaba turbio. Al 20% cae sobre la ladera soleada: brillo 104, y
+     además es fondo tranquilo, que es lo que la pieza necesita detrás. */
+  background: url('../assets/images/bg/hero.webp') 20% center / cover no-repeat;
   display: flex; align-items: center; justify-content: center;
   padding: 96px var(--gutter) 72px clamp(1rem, 2vw, 2rem);
 }
-/* Viñeta suave: hunde apenas los bordes del panel para que la pieza se despegue. */
+/* Viñeta apenas perceptible: solo asienta los bordes, no oscurece el panel. */
 .hero__media::before {
   content: ''; position: absolute; inset: 0;
-  background: radial-gradient(75% 65% at 50% 48%, rgba(30,36,20,0) 40%, rgba(30,36,20,0.28) 100%);
+  background: radial-gradient(78% 68% at 50% 48%, rgba(30,36,20,0) 45%, rgba(30,36,20,0.16) 100%);
 }
 .hero__kicker {
   font-family: var(--font-display); font-size: 0.85rem; letter-spacing: 0.22em; text-transform: uppercase;
@@ -168,9 +172,15 @@ body.is-locked { overflow: hidden; }
 .piece::before {
   /* halo de luz cálida detrás de la pieza, no un recuadro */
   content: ''; position: absolute; inset: 6%;
-  background: radial-gradient(circle at 50% 46%, rgba(255,226,168,0.85), rgba(255,226,168,0) 68%);
+  background: radial-gradient(circle at 50% 46%, rgba(255,231,180,0.9), rgba(255,231,180,0) 66%);
 }
-.piece canvas { position: relative; width: 100%; height: 100%; }
+/* La sombra va sobre el canvas, así sigue la silueta real del dado y no su
+   caja: es lo que lo despega del pasto y lo hace leer como un objeto que
+   flota en la escena, no como una calcomanía encima de la foto. */
+.piece canvas {
+  position: relative; width: 100%; height: 100%;
+  filter: drop-shadow(0 16px 26px rgba(26,32,14,0.5)) drop-shadow(0 2px 4px rgba(26,32,14,0.3));
+}
 /* La leyenda va sobre la foto: crema con sombra, no la tinta del pergamino. */
 .piece__caption {
   font-size: 0.82rem; letter-spacing: 0.16em; text-transform: uppercase;
@@ -365,7 +375,9 @@ body.is-locked { overflow: hidden; }
 .footer__meta a:hover { color: #fff; border-bottom-color: currentColor; }
 
 /* --------------------------------------------------------------- responsive */
-@media (max-width: 1000px) {
+/* Apila a 1080 y no a 1000: en una ventana de ~1010px las dos columnas entran,
+   pero quedan tan justas que la pieza casi toca el borde del panel. */
+@media (max-width: 1080px) {
   /* Apilado: el panel de foto con la pieza arriba, el texto sobre pergamino
      debajo. Sigue sin haber texto encima de la foto. */
   .hero { min-height: auto; grid-template-columns: 1fr; }

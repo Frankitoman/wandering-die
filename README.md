@@ -39,5 +39,9 @@ git pull
 rm -rf _site && mkdir _site
 cp index.html _site/
 cp -r css js assets _site/
+# Versiona css/js en la COPIA de deploy (el fuente queda limpio), para que
+# ningún navegador se quede con una hoja o un script viejo.
+V=$(date +%s)
+sed -i "s|\(href=\"css/style.css\)\"|?v=$V\"|; s|\(src=\"js/[a-z0-9-]*\.js\)\"|?v=$V\"|g" _site/index.html
 npx wrangler deploy
 ```
