@@ -53,7 +53,7 @@
     els.list = document.getElementById('diceList');
     els.stage = document.getElementById('diceStage');
     els.prompt = document.getElementById('dicePrompt');
-    els.dc = document.getElementById('diceDC');
+    els.again = document.getElementById('diceAgain');
     els.canvas = document.getElementById('diceCanvas');
     els.rollBtn = document.getElementById('diceRollBtn');
     els.result = document.getElementById('diceResult');
@@ -76,21 +76,28 @@
     var items = SCENARIOS.filter(function (s) {
       return activeCategory === 'all' || s.category === activeCategory;
     });
+    // La dificultad no se muestra en ningún lado: sigue estando en los datos
+    // porque es lo que decide si la tirada sale bien o mal, pero enseñarla
+    // convierte una consulta al destino en una planilla de reglas.
     els.list.innerHTML = items.map(function (s) {
       return '<button type="button" class="decision" data-idx="' + SCENARIOS.indexOf(s) + '">' +
-        '<span class="decision__text">' + esc(s.label) + '</span>' +
-        '<span class="decision__dc">CD ' + s.dc + '</span></button>';
+        '<span class="decision__text">' + esc(s.label) + '</span></button>';
     }).join('');
   }
 
   function selectScenario(key, label, dc, low, high) {
     current = { key: key, label: label, dc: dc, low: low, high: high };
     els.prompt.textContent = label;
-    els.dc.textContent = 'Dificultad ' + dc;
     els.result.hidden = true;
+    els.again.hidden = true;
     els.stage.hidden = false;
+    els.rollBtn.hidden = false;
     els.rollBtn.disabled = false;
     els.rollBtn.textContent = 'Tirar el dado';
+    // La bandeja arranca oculta, así que hasta este momento el lienzo del dado
+    // medía 0×0 y el render salía a la resolución de respaldo. Recién ahora
+    // tiene tamaño de verdad: sin este ajuste el dado se ve borroso.
+    if (global.WD3D && global.WD3D.resize) global.WD3D.resize();
     els.stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
@@ -123,8 +130,10 @@
       : success ? 'Superás la dificultad' : 'No llegás';
     els.outcome.textContent = pick(success ? current.high : current.low, current.key + (success ? '_h' : '_l'));
     els.result.hidden = false;
-    els.rollBtn.disabled = false;
-    els.rollBtn.textContent = 'Tirar de nuevo';
+    // Una tirada por decisión: el botón desaparece. Si el dado se pudiera tirar
+    // de nuevo hasta que salga lo que uno quiere, no estaría decidiendo nada.
+    els.rollBtn.hidden = true;
+    els.again.hidden = false;
   }
 
   function submitCustom() {

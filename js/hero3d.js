@@ -4,7 +4,7 @@
 // flota en el aire, gira despacio y sin fin, y responde al cursor girando hacia
 // donde estás mirando. Sin física acá: esto es una vitrina, no una tirada.
 import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-import { buildDie } from './die-mesh.js';
+import { buildDie, buildEnvironment } from './die-mesh.js';
 
 (function () {
   'use strict';
@@ -19,24 +19,28 @@ import { buildDie } from './die-mesh.js';
   function build(canvas) {
     renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.3;
 
     scene = new THREE.Scene();
+    // El bronce es metal: sin mapa de entorno saldría negro. Este cielo pintado
+    // a mano (copas verdes abajo, sol cálido arriba) es casi todo lo que se ve
+    // en la pieza, y es lo que la ata a la foto del bosque que tiene detrás.
+    scene.environment = buildEnvironment(renderer);
+
     camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
     camera.position.set(0, 0.4, 6.2);
     camera.lookAt(0, 0, 0);
 
-    // Luz de galería. El relleno era verde (0xd6efaa) y teñía el dado de
-    // lechuga: la piedra tiene que leerse como hueso, no como hoja. Ahora es
-    // cálido neutro, con menos ambiente y una clave más marcada para que las
-    // facetas y el relieve de la textura se vean.
-    scene.add(new THREE.HemisphereLight(0xfff2d8, 0x6d6550, 0.72));
-    var key = new THREE.DirectionalLight(0xffe0b4, 2.7);
+    // Con entorno, las luces sólo marcan el brillo y separan la pieza del fondo.
+    scene.add(new THREE.HemisphereLight(0xfff2d8, 0x6d6550, 0.3));
+    var key = new THREE.DirectionalLight(0xffe0b4, 1.6);
     key.position.set(3.5, 5, 4);
     scene.add(key);
-    var fill = new THREE.DirectionalLight(0xeae2cc, 0.42);
+    var fill = new THREE.DirectionalLight(0xeae2cc, 0.3);
     fill.position.set(-4, -1, 2);
     scene.add(fill);
-    var rim = new THREE.DirectionalLight(0xfff6e6, 1.0);
+    var rim = new THREE.DirectionalLight(0xfff6e6, 0.8);
     rim.position.set(-2, 3, -5);
     scene.add(rim);
 
@@ -52,7 +56,8 @@ import { buildDie } from './die-mesh.js';
   function resize() {
     if (!renderer) return;
     var el = renderer.domElement;
-    var w = el.clientWidth || 320, h = el.clientHeight || 320;
+    var w = el.clientWidth, h = el.clientHeight;
+    if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -121,6 +126,7 @@ import { buildDie } from './die-mesh.js';
       try {
         build(canvas);
         resize();
+        if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
         window.addEventListener('resize', resize, { passive: true });
         bindPointer(canvas);
         requestAnimationFrame(frame);
